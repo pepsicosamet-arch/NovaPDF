@@ -1,6 +1,6 @@
 use super::tools::row_label;
 use super::{
-    Align2, Availability, Color32, CornerRadius, LeftPanel, NovaPdfApp, Rect, Sense, Stroke, Tokens, ToolGroup, ToolItem, catalog, icons, theme,
+    Align2, Availability, Color32, CornerRadius, LeftPanel, PdfCraftApp, Rect, Sense, Stroke, Tokens, ToolGroup, ToolItem, catalog, icons, theme,
     vec2, widgets,
 };
 
@@ -18,7 +18,7 @@ const EDIT_OTHER_TOOLS: [&str; 3] = ["combine", "redact", "form"];
 /// Add content with the rarer items under More; and Other options, the neighbouring tools.
 /// Edit text & images itself is on the floating toolbar, and on from the moment Edit opens.
 /// Every item comes from the catalogue, so its label, icon and availability have one source.
-pub(super) fn edit_panel(app: &mut NovaPdfApp, ui: &mut egui::Ui, t: &Tokens, g: &'static ToolGroup) {
+pub(super) fn edit_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens, g: &'static ToolGroup) {
     let items = || g.sections.iter().flat_map(|s| s.items.iter());
     let item = |command: &str| items().find(|i| i.command == command);
     let mut run = None;
@@ -131,7 +131,7 @@ pub(super) fn edit_panel(app: &mut NovaPdfApp, ui: &mut egui::Ui, t: &Tokens, g:
 /// A tool entry with further commands (Add / Update / Remove): a caret at `caret` says it opens a
 /// menu, and each command is enabled by its own needs. Returns the command chosen.
 pub(super) fn actions_menu(
-    app: &NovaPdfApp,
+    app: &PdfCraftApp,
     ui: &egui::Ui,
     resp: &egui::Response,
     item: &ToolItem,
@@ -182,7 +182,7 @@ fn edit_row(ui: &mut egui::Ui, t: &Tokens, icon: &str, label: &str, availability
 
 /// Add a stamp: Dynamic, Sign Here and Standard Business stamps; click one, then click on the
 /// page to place it.
-pub(super) fn stamp_palette(app: &mut NovaPdfApp, ui: &mut egui::Ui, t: &Tokens) {
+pub(super) fn stamp_palette(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
     use pdfcraft_engine::{StampGroup, StampKind};
     ui.label(egui::RichText::new(tl!("Choose a stamp, then click on the page to place it.")).small().color(t.text_faint));
     egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
@@ -253,7 +253,7 @@ pub(super) fn stamp_palette(app: &mut NovaPdfApp, ui: &mut egui::Ui, t: &Tokens)
 
 /// Edit a PDF ▸ Format text: for the selected added text (one undoable change), or the style
 /// new text gets.
-fn format_section(app: &mut NovaPdfApp, ui: &mut egui::Ui, t: &Tokens) {
+fn format_section(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
     // Editing a paragraph of existing text: its formatting, applied as it changes.
     if let Some((i, _)) = app.active_ids()
         && let Some(ed) = app.views[i].line_editor.clone()
@@ -401,7 +401,7 @@ fn added_text_format(
     out
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// Format text changed while added text is being typed in view `index`: the box takes the new
     /// style at once and stays open. Text already on the page is updated with what has been typed,
     /// as one undoable change; new text waits until it is finished. Text typed after this styling

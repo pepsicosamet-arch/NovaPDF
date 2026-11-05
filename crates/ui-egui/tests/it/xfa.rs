@@ -4,7 +4,7 @@
 
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::NovaPdfApp;
+use pdfcraft_ui_egui::PdfCraftApp;
 
 /// A one-page PDF with a proper xref; `acroform` is the catalog's /AcroForm (or empty), `extra`
 /// more catalog entries, `objects` extra objects numbered from 5.
@@ -33,9 +33,9 @@ fn pdf(acroform: &str, extra: &str, objects: &[&str]) -> Vec<u8> {
 
 const XFA_PACKET: &str = "<< /Length 52 >>\nstream\n<xdp:xdp xmlns:xdp=\"http://ns.adobe.com/xdp/\"></xdp:xdp>\nendstream";
 
-fn open(bytes: Vec<u8>) -> Harness<'static, NovaPdfApp> {
+fn open(bytes: Vec<u8>) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 800.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("form.pdf", None, bytes).expect("opens");
         app
@@ -44,7 +44,7 @@ fn open(bytes: Vec<u8>) -> Harness<'static, NovaPdfApp> {
     h
 }
 
-fn xfa(h: &Harness<'static, NovaPdfApp>) -> Option<pdfcraft_render::Xfa> {
+fn xfa(h: &Harness<'static, PdfCraftApp>) -> Option<pdfcraft_render::Xfa> {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().info.xfa
 }
@@ -112,7 +112,7 @@ fn ordinary_forms_and_documents_have_no_xfa_notice() {
 }
 
 /// Click the centre of a field's widget.
-fn click_field(h: &mut Harness<'static, NovaPdfApp>, name: &str) {
+fn click_field(h: &mut Harness<'static, PdfCraftApp>, name: &str) {
     let p = {
         let s = h.state();
         let doc = s.session.get(s.views[0].id).unwrap();
@@ -131,7 +131,7 @@ fn click_field(h: &mut Harness<'static, NovaPdfApp>, name: &str) {
 fn xfa_buttons_run_their_scripts_in_the_app() {
     let mut h = open(pdfcraft_xfa::fixtures::shell(&pdfcraft_xfa::fixtures::scripted_template()));
     crate::support::settle(&mut h);
-    let names = |h: &Harness<'static, NovaPdfApp>| {
+    let names = |h: &Harness<'static, PdfCraftApp>| {
         let s = h.state();
         s.session.get(s.views[0].id).unwrap().form.iter().map(|f| f.name.clone()).collect::<Vec<_>>()
     };

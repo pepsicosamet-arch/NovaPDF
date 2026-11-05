@@ -16,7 +16,7 @@ use pdfcraft_engine::commands::{self, Shortcut};
 
 use crate::canvas::{Fit, PageLayout};
 use crate::theme::ThemePreference;
-use crate::{NovaPdfApp, RightPanel};
+use crate::{PdfCraftApp, RightPanel};
 
 pub(super) mod tab_context;
 
@@ -272,7 +272,7 @@ pub(crate) fn layout_options() -> LayoutOptions<'static> {
     LayoutOptions { label: &translate, ..LayoutOptions::new(APP_NAME) }
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// The app's menus for this frame, before the platform layout: every item's label, shortcut,
     /// enabled and checked state as the app is now. A modal dialog doesn't grey anything here;
     /// that is the [`Gate`]'s job ([`NovaPdfApp::menu_gate`]).
@@ -649,8 +649,8 @@ mod tests {
 
     const PDF: &[u8] = include_bytes!("../tests/data/form.pdf");
 
-    fn app(docs: &[&str]) -> (NovaPdfApp, egui::Context) {
-        let mut app = NovaPdfApp::new();
+    fn app(docs: &[&str]) -> (PdfCraftApp, egui::Context) {
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         for name in docs {
             app.open_bytes(name, None, PDF.to_vec()).unwrap();
@@ -658,7 +658,7 @@ mod tests {
         (app, egui::Context::default())
     }
 
-    fn linux(app: &NovaPdfApp, ctx: &egui::Context) -> MenuBar {
+    fn linux(app: &PdfCraftApp, ctx: &egui::Context) -> MenuBar {
         craft_menu::layout(&app.menu_bar(ctx), Target::Linux, &layout_options()).bar
     }
 
@@ -713,7 +713,7 @@ mod tests {
     #[test]
     fn check_and_radio_items_follow_the_app() {
         let (mut app, ctx) = app(&["a.pdf"]);
-        let kind = |app: &NovaPdfApp, id: &str| item(&linux(app, &ctx), &CommandRef::new(id)).kind;
+        let kind = |app: &PdfCraftApp, id: &str| item(&linux(app, &ctx), &CommandRef::new(id)).kind;
         assert_eq!(kind(&app, "view.layout.single"), ItemKind::Radio(true));
         assert_eq!(kind(&app, "view.layout.two_up"), ItemKind::Radio(false));
         let continuous = app.views[0].continuous();

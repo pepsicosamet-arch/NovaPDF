@@ -13,10 +13,10 @@ use pdfcraft_engine::Edit;
 
 use crate::canvas::ViewAction;
 use crate::theme::{self, Tokens};
-use crate::{LeftPanel, NovaPdfApp, icons, widgets};
+use crate::{LeftPanel, PdfCraftApp, icons, widgets};
 
 /// Whether the left panel is Organize pages: the tool is chosen, or the active view shows the grid.
-pub(crate) fn showing(app: &NovaPdfApp) -> bool {
+pub(crate) fn showing(app: &PdfCraftApp) -> bool {
     app.left == LeftPanel::Tool("organize") || app.active.and_then(|i| app.views.get(i)).is_some_and(|v| v.organize)
 }
 
@@ -39,7 +39,7 @@ enum Act {
     Command(&'static str),
 }
 
-pub(crate) fn panel(app: &mut NovaPdfApp, ui: &mut egui::Ui, t: &Tokens) {
+pub(crate) fn panel(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
     let Some((index, id)) = app.active_ids() else { return };
     let Some(doc) = app.session.get(id) else { return };
     let info = &doc.info;

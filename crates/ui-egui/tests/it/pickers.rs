@@ -9,7 +9,7 @@ use crate::support;
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
 use pdfcraft_render::{PageRenderer, RenderRequest, RequestKind};
-use pdfcraft_ui_egui::NovaPdfApp;
+use pdfcraft_ui_egui::PdfCraftApp;
 
 /// An `n`-page document with a proper xref table.
 fn fixture(n: usize) -> Vec<u8> {
@@ -37,16 +37,16 @@ fn fixture(n: usize) -> Vec<u8> {
     out
 }
 
-fn pages(app: &NovaPdfApp, view: usize) -> usize {
+fn pages(app: &PdfCraftApp, view: usize) -> usize {
     let doc = app.session.get(app.views[view].id).unwrap();
     PageRenderer::new(doc.bytes.clone(), Default::default()).page_count()
 }
 
 /// A shell with `docs` open, each the given number of pages.
-fn harness(docs: &[usize]) -> Harness<'static, NovaPdfApp> {
+fn harness(docs: &[usize]) -> Harness<'static, PdfCraftApp> {
     let docs = docs.to_vec();
     let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         for (i, n) in docs.iter().enumerate() {
             app.open_bytes(&format!("doc{i}.pdf"), None, fixture(*n)).unwrap();
@@ -130,11 +130,11 @@ fn page_count(bytes: Vec<u8>) -> usize {
     PageRenderer::new(std::sync::Arc::new(bytes), Default::default()).page_count()
 }
 
-fn dirty(app: &NovaPdfApp, view: usize) -> bool {
+fn dirty(app: &PdfCraftApp, view: usize) -> bool {
     app.session.get(app.views[view].id).is_some_and(|d| d.dirty)
 }
 
-fn rotate_first_page(app: &mut NovaPdfApp) {
+fn rotate_first_page(app: &mut PdfCraftApp) {
     app.apply_edit(pdfcraft_engine::Edit::RotatePages { pages: vec![0], degrees: 90 });
 }
 
@@ -263,7 +263,7 @@ fn extract_pages_saves_under_the_file_name_typed_in_the_dialog() {
 /// the reason in the dialog and the Extract button off.
 #[test]
 fn extract_pages_takes_the_page_ranges_typed_in_the_dialog() {
-    let texts = |app: &NovaPdfApp, view: usize| {
+    let texts = |app: &PdfCraftApp, view: usize| {
         let doc = app.session.get(app.views[view].id).unwrap();
         let mut r = PageRenderer::new(doc.bytes.clone(), Default::default());
         (0..r.page_count())
@@ -507,7 +507,7 @@ fn a_watermark_file_from_browse_lands_only_in_the_dialog_that_asked() {
 
 /// Browsers read picked files asynchronously and queue them on `requests` (#167): the request
 /// is made when the picker opens, so it is bound to the document active then.
-fn browser_insert(h: &Harness<'static, NovaPdfApp>, pages: usize) -> pdfcraft_ui_egui::FileRequest {
+fn browser_insert(h: &Harness<'static, PdfCraftApp>, pages: usize) -> pdfcraft_ui_egui::FileRequest {
     h.state().file_request(pdfcraft_ui_egui::FilePurpose::InsertPages, vec![("b.pdf".into(), fixture(pages))])
 }
 
@@ -586,7 +586,7 @@ fn a_failed_startup_url_is_reported_in_the_app() {
     assert!(failed.lock().unwrap().is_empty(), "each failure is reported once");
 }
 
-fn deliver_startup(h: &Harness<'static, NovaPdfApp>, name: &str, bytes: Vec<u8>) {
+fn deliver_startup(h: &Harness<'static, PdfCraftApp>, name: &str, bytes: Vec<u8>) {
     h.state().startup_inbox.lock().unwrap().push((name.into(), bytes));
 }
 
@@ -811,7 +811,7 @@ impl egui::DroppedFile for Dropped {
 /// a frame before it is committed. A frame that asks to interrupt the composition makes
 /// egui-winit switch the input method off and on again, which drops what it holds, so the commit
 /// never comes.
-fn type_through_input_method(h: &mut Harness<'static, NovaPdfApp>, text: &str) {
+fn type_through_input_method(h: &mut Harness<'static, PdfCraftApp>, text: &str) {
     for c in text.chars() {
         let c = c.to_string();
         h.event(egui::Event::Ime(egui::ImeEvent::Preedit { text: c.clone(), active_range_chars: Some(0..1) }));
@@ -835,7 +835,7 @@ fn the_open_password_can_be_typed_through_an_input_method_however_the_file_is_op
         let path = file.to_string_lossy().into_owned();
         let arg = path.clone();
         let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(move |_cc| {
-            let mut app = NovaPdfApp::new();
+            let mut app = PdfCraftApp::new();
             app.set_option("language", "en").unwrap();
             // As `main` opens the files named on the command line.
             if matches!(from, OpenedFrom::CommandLine) {

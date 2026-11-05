@@ -3,11 +3,11 @@
 
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::{Dialog, LeftPanel, NovaPdfApp};
+use pdfcraft_ui_egui::{Dialog, LeftPanel, PdfCraftApp};
 
-fn harness(setup: impl FnOnce(&mut NovaPdfApp) + 'static) -> Harness<'static, NovaPdfApp> {
+fn harness(setup: impl FnOnce(&mut PdfCraftApp) + 'static) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 1000.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.run_inline = true;
         setup(&mut app);
@@ -19,7 +19,7 @@ fn harness(setup: impl FnOnce(&mut NovaPdfApp) + 'static) -> Harness<'static, No
 
 #[test]
 fn state_operations_and_validation() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     assert!(!app.is_tool_pinned("redact"));
 
     // Pinning a valid tool
@@ -61,14 +61,14 @@ fn state_operations_and_validation() {
 
 #[test]
 fn persistence_round_trip_and_sanitization() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.pin_tool("protect");
     app.pin_tool("redact");
 
     let saved = app.persist();
     assert!(saved.contains("\"pinned_tools\""));
 
-    let mut restored = NovaPdfApp::new();
+    let mut restored = PdfCraftApp::new();
     restored.restore(&saved);
     assert_eq!(restored.pinned_tools, vec!["protect", "redact"]);
 

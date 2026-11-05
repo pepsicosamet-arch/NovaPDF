@@ -6,12 +6,12 @@ use std::sync::{Arc, Mutex};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use pdfcraft_render::{PageRenderer, RenderRequest, RequestKind};
-use pdfcraft_ui_egui::NovaPdfApp;
+use pdfcraft_ui_egui::PdfCraftApp;
 use pdfcraft_ui_egui::control::{ControlClient, Reply};
 use serde_json::{Value, json};
 
 /// The text each page shows, in order, as the app's session holds it.
-fn page_texts(app: &NovaPdfApp) -> Vec<String> {
+fn page_texts(app: &PdfCraftApp) -> Vec<String> {
     let doc = app.session.get(app.views[0].id).unwrap();
     let mut r = PageRenderer::new(doc.bytes.clone(), Default::default());
     (0..r.page_count())
@@ -47,19 +47,19 @@ fn fixture(n: usize) -> Vec<u8> {
     out
 }
 
-fn harness() -> (Harness<'static, NovaPdfApp>, ControlClient) {
+fn harness() -> (Harness<'static, PdfCraftApp>, ControlClient) {
     harness_pages(5)
 }
 
-fn harness_pages(pages: usize) -> (Harness<'static, NovaPdfApp>, ControlClient) {
+fn harness_pages(pages: usize) -> (Harness<'static, PdfCraftApp>, ControlClient) {
     harness_pages_at(pages, 1400.0, 1.0)
 }
 
-fn harness_pages_at(pages: usize, width: f32, scale: f32) -> (Harness<'static, NovaPdfApp>, ControlClient) {
+fn harness_pages_at(pages: usize, width: f32, scale: f32) -> (Harness<'static, PdfCraftApp>, ControlClient) {
     let slot: Arc<Mutex<Option<ControlClient>>> = Arc::default();
     let s = slot.clone();
     let mut h = Harness::builder().with_size(egui::vec2(width, 900.0)).with_pixels_per_point(scale).build_eframe(move |cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         *s.lock().unwrap() = Some(app.attach_control(&cc.egui_ctx));
         app.open_bytes("doc.pdf", None, fixture(pages)).unwrap();
@@ -71,7 +71,7 @@ fn harness_pages_at(pages: usize, width: f32, scale: f32) -> (Harness<'static, N
 }
 
 /// Send a request and run frames until it is answered.
-fn call(h: &mut Harness<'static, NovaPdfApp>, c: &ControlClient, method: &str, params: Value) -> Reply {
+fn call(h: &mut Harness<'static, PdfCraftApp>, c: &ControlClient, method: &str, params: Value) -> Reply {
     let rx = c.send(method, params);
     let mut reply = None;
     let answered = crate::support::step_until(h, |_| {
@@ -84,7 +84,7 @@ fn call(h: &mut Harness<'static, NovaPdfApp>, c: &ControlClient, method: &str, p
     }
 }
 
-fn ok(h: &mut Harness<'static, NovaPdfApp>, c: &ControlClient, method: &str, params: Value) -> Value {
+fn ok(h: &mut Harness<'static, PdfCraftApp>, c: &ControlClient, method: &str, params: Value) -> Value {
     call(h, c, method, params).unwrap_or_else(|e| panic!("{method}: {e}"))
 }
 
@@ -92,7 +92,7 @@ fn ok(h: &mut Harness<'static, NovaPdfApp>, c: &ControlClient, method: &str, par
 /// opens a modal. `ui.set` answers in the input pass, and a font change discards the pass that
 /// applies it, so the modal's labels are not in the accessibility tree until those frames have
 /// been laid out.
-fn settle(h: &mut Harness<'static, NovaPdfApp>) {
+fn settle(h: &mut Harness<'static, PdfCraftApp>) {
     h.run_steps(3);
 }
 
@@ -103,7 +103,7 @@ fn comment_pin_is_reported_and_persistent() {
     for pinned in [true, false] {
         ok(&mut h, &c, "ui.set", json!({"key":"comment-tool-pinned","value":pinned}));
         assert_eq!(ok(&mut h, &c, "ui.state", json!({}))["comment_tool_pinned"], pinned);
-        let mut restored = NovaPdfApp::new();
+        let mut restored = PdfCraftApp::new();
         restored.comment_prefs.pinned = !pinned;
         restored.restore(&h.state().persist());
         assert_eq!(restored.comment_prefs.pinned, pinned);
@@ -216,7 +216,7 @@ fn control_focus_traverses_real_widgets_and_keyboard_activates() {
 /// A frame driven in production order: eframe's raw input hook runs before egui's input hooks, so
 /// the control plugin sees the focus/dialog generation produced by the previous UI pass. The
 /// kittest harness does not call `raw_input_hook`, which otherwise hides focus-change bugs.
-fn production_step(h: &mut Harness<'static, NovaPdfApp>) {
+fn production_step(h: &mut Harness<'static, PdfCraftApp>) {
     let ctx = h.ctx.clone();
     let mut raw = std::mem::take(h.input_mut());
     h.state_mut().prepare_raw_input(&ctx, &mut raw);
@@ -224,7 +224,7 @@ fn production_step(h: &mut Harness<'static, NovaPdfApp>) {
     h.step();
 }
 
-fn call_production(h: &mut Harness<'static, NovaPdfApp>, c: &ControlClient, method: &str, params: Value) -> Reply {
+fn call_production(h: &mut Harness<'static, PdfCraftApp>, c: &ControlClient, method: &str, params: Value) -> Reply {
     let rx = c.send(method, params);
     for _ in 0..30 {
         production_step(h);
@@ -325,7 +325,7 @@ fn control_focus_rejects_missing_ambiguous_disabled_and_nonfocusable_targets() {
     assert!(call(&mut h, &c, "ui.focus", json!({"id": disabled["id"]})).is_err());
 }
 
-fn close_requested(h: &Harness<'static, NovaPdfApp>) -> bool {
+fn close_requested(h: &Harness<'static, PdfCraftApp>) -> bool {
     h.output().viewport_output.values().any(|v| v.commands.iter().any(|c| matches!(c, egui::ViewportCommand::Close)))
 }
 
@@ -355,7 +355,7 @@ fn control_quit_preserves_dirty_documents_and_cancel_keeps_them_open() {
 }
 
 /// Run one frame and return the attention requests it sent to the window.
-fn step_attention(h: &mut Harness<'static, NovaPdfApp>) -> Vec<egui::UserAttentionType> {
+fn step_attention(h: &mut Harness<'static, PdfCraftApp>) -> Vec<egui::UserAttentionType> {
     h.step();
     let commands = h.output().viewport_output.values().flat_map(|v| v.commands.iter());
     commands.filter_map(|c| if let egui::ViewportCommand::RequestUserAttention(a) = c { Some(*a) } else { None }).collect()
@@ -363,7 +363,7 @@ fn step_attention(h: &mut Harness<'static, NovaPdfApp>) -> Vec<egui::UserAttenti
 
 /// Send a request, run frames until it is answered and three more, and collect every attention
 /// request those frames sent.
-fn attention_during(h: &mut Harness<'static, NovaPdfApp>, c: &ControlClient, method: &str, params: Value) -> Vec<egui::UserAttentionType> {
+fn attention_during(h: &mut Harness<'static, PdfCraftApp>, c: &ControlClient, method: &str, params: Value) -> Vec<egui::UserAttentionType> {
     let rx = c.send(method, params);
     let mut sent = Vec::new();
     for _ in 0..30 {
@@ -377,7 +377,7 @@ fn attention_during(h: &mut Harness<'static, NovaPdfApp>, c: &ControlClient, met
 }
 
 /// Open `name` with an unsaved change, in a tab of its own.
-fn open_unsaved(h: &mut Harness<'static, NovaPdfApp>, name: &str) {
+fn open_unsaved(h: &mut Harness<'static, PdfCraftApp>, name: &str) {
     let app = h.state_mut();
     app.open_bytes(name, None, fixture(1)).unwrap();
     app.active = Some(app.views.len() - 1);
@@ -563,7 +563,7 @@ fn language_switch_preserves_document_and_command_ids() {
 }
 
 #[cfg(target_os = "linux")]
-fn start_autoscroll(h: &mut Harness<'static, NovaPdfApp>, c: &ControlClient) -> egui::Pos2 {
+fn start_autoscroll(h: &mut Harness<'static, PdfCraftApp>, c: &ControlClient) -> egui::Pos2 {
     let p = h.state().views[0].viewport_rect().center();
     ok(h, c, "ui.click", json!({ "x": p.x, "y": p.y, "button": "middle" }));
     assert!(h.state().views[0].auto_scrolling());
@@ -581,7 +581,7 @@ struct CanvasPosition {
 
 #[cfg(target_os = "linux")]
 impl CanvasPosition {
-    fn new(h: &Harness<'static, NovaPdfApp>) -> Self {
+    fn new(h: &Harness<'static, PdfCraftApp>) -> Self {
         let grid = h.state().views[0].organize.then(|| {
             let first = h.get_by_label("Page 1").rect().top();
             let (page, next_row) = Self::grid_cells(h).into_iter().find(|(_, top)| *top > first + 1.0).expect("a second grid row");
@@ -590,7 +590,7 @@ impl CanvasPosition {
         Self { grid }
     }
 
-    fn grid_cells(h: &Harness<'static, NovaPdfApp>) -> Vec<(usize, f32)> {
+    fn grid_cells(h: &Harness<'static, PdfCraftApp>) -> Vec<(usize, f32)> {
         use egui_kittest::kittest::NodeT;
         let mut cells: Vec<_> = h
             .query_all_by_label_contains("Page ")
@@ -603,7 +603,7 @@ impl CanvasPosition {
         cells
     }
 
-    fn top(&self, h: &Harness<'static, NovaPdfApp>) -> f32 {
+    fn top(&self, h: &Harness<'static, PdfCraftApp>) -> f32 {
         match self.grid {
             Some((columns, row_pitch)) => {
                 let (page, top) = Self::grid_cells(h).into_iter().next().expect("a rendered grid cell");
@@ -701,7 +701,7 @@ fn farther_from_the_click_scrolls_faster_in_the_viewer_and_page_grid() {
         h.state_mut().views[0].organize = organize;
         h.run_steps(3);
         let position = CanvasPosition::new(&h);
-        let top = |h: &Harness<'static, NovaPdfApp>| position.top(h);
+        let top = |h: &Harness<'static, PdfCraftApp>| position.top(h);
         let p = start_autoscroll(&mut h, &c);
         ok(&mut h, &c, "ui.move", json!({ "x": p.x, "y": p.y + 30.0 }));
         let before_near = top(&h);
@@ -734,8 +734,8 @@ fn autoscroll_uses_elapsed_frame_time_and_preserves_fractional_motion_in_both_vi
             h.run_steps(3);
             assert_eq!(h.ctx.pixels_per_point(), scale);
             let position = CanvasPosition::new(&h);
-            let top = |h: &Harness<'static, NovaPdfApp>| position.top(h);
-            let step = |h: &mut Harness<'static, NovaPdfApp>| {
+            let top = |h: &Harness<'static, PdfCraftApp>| position.top(h);
+            let step = |h: &mut Harness<'static, PdfCraftApp>| {
                 // Deliberately differ from the harness's predicted frame interval: scrolling
                 // must follow the elapsed time rather than the display's predicted rate.
                 h.input_mut().time = Some(h.ctx.input(|i| i.time) + 1.0 / f64::from(frames));
@@ -1329,7 +1329,7 @@ fn ctrl_dragging_a_thumbnail_through_the_control_channel_copies_the_page() {
     ok(&mut h, &c, "ui.set", json!({ "key": "tool", "value": "organize" }));
     h.run_steps(3);
     // The grid cell of a page: the node labelled exactly "Page N" (the checkbox says "Select page N").
-    let cell = |h: &mut Harness<'static, NovaPdfApp>, c: &ControlClient, page: usize| -> [f64; 4] {
+    let cell = |h: &mut Harness<'static, PdfCraftApp>, c: &ControlClient, page: usize| -> [f64; 4] {
         let nodes = ok(h, c, "ui.inspect", json!({ "query": &format!("page {page}") }));
         let want = format!("Page {page}");
         let r = nodes["widgets"]
@@ -1466,7 +1466,7 @@ fn loopback_transport_requires_the_token() {
             out
         })
     };
-    let pump = |h: &mut Harness<'static, NovaPdfApp>, t: std::thread::JoinHandle<Vec<Value>>| {
+    let pump = |h: &mut Harness<'static, PdfCraftApp>, t: std::thread::JoinHandle<Vec<Value>>| {
         while !t.is_finished() {
             h.step();
         }
@@ -1528,7 +1528,7 @@ fn measurement_tools_draw_live_calibrate_save_and_export() {
     h.run_steps(3);
     let scale = h.state().session.get(doc).unwrap().measurement_scale(0, [20.0, 20.0]).unwrap();
     assert!((scale.x - 0.1).abs() < 1e-10);
-    let click = |h: &mut Harness<'static, NovaPdfApp>, c: &ControlClient, x: f32, y: f32| {
+    let click = |h: &mut Harness<'static, PdfCraftApp>, c: &ControlClient, x: f32, y: f32| {
         let r = h.state().views[0].page_screen_rect(0).unwrap();
         ok(h, c, "ui.click", json!({"x":r.left()+x*r.width()/200.0,"y":r.top()+y*r.height()/300.0}));
         h.run_steps(2);
@@ -1586,7 +1586,7 @@ fn a_1_to_50_scale_in_millimetres_measures_a_10_mm_line_as_500_mm() {
     h.run_steps(3);
     let mm = 72.0 / 25.4;
     let line = [[20.0, 30.0], [20.0 + 10.0 * mm, 30.0]];
-    let stored = |h: &Harness<'static, NovaPdfApp>| {
+    let stored = |h: &Harness<'static, PdfCraftApp>| {
         let scale = h.state().session.get(doc).unwrap().measurement_scale(0, line[0]).unwrap();
         (measure::reading(Kind::Distance, &line, &scale).unwrap().value, scale.ratio)
     };
@@ -1624,7 +1624,7 @@ fn a_plan_scale_picked_or_typed_applies_at_once() {
     h.run_steps(2);
     // 60 mm of paper.
     let line = [[20.0, 20.0], [20.0 + 60.0 / 25.4 * 72.0, 20.0]];
-    let read = |h: &Harness<'static, NovaPdfApp>| {
+    let read = |h: &Harness<'static, PdfCraftApp>| {
         let scale = h.state().session.get(doc).unwrap().measurement_scale(0, line[0]).unwrap();
         (measure::reading(Kind::Distance, &line, &scale).unwrap().label, scale.ratio)
     };
@@ -1635,7 +1635,7 @@ fn a_plan_scale_picked_or_typed_applies_at_once() {
     h.run_steps(3);
     assert_eq!(read(&h), ("12.00 m".to_string(), "1 mm = 0.2 m".to_string()));
     // Typed, in the other notations; leaving the field applies.
-    fn field<'a>(h: &'a Harness<'static, NovaPdfApp>) -> egui_kittest::Node<'a> {
+    fn field<'a>(h: &'a Harness<'static, PdfCraftApp>) -> egui_kittest::Node<'a> {
         h.get_by_role_and_label(egui::accesskit::Role::TextInput, "Scale")
     }
     for (typed, label) in [("1/50", "3.00 m"), ("1:100", "6.00 m")] {
@@ -1766,7 +1766,7 @@ fn home_and_combine_hide_the_side_panel_without_forgetting_it() {
 
 #[test]
 fn malformed_panel_settings_preserve_other_preferences() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.restore(r#"{"docking":{"layout":{"root":null,"floating":[]},"hidden":[]},"default_mode":"edit","flatten_fill_sign":true}"#);
     assert_eq!(app.default_mode, pdfcraft_ui_egui::Mode::Edit);
     assert_eq!(app.side_panels, pdfcraft_ui_egui::side_panels::SidePanels::default());
@@ -1861,7 +1861,7 @@ fn control_open_of_an_already_open_file_replies_ok_and_focuses_its_tab() {
     let slot: Arc<Mutex<Option<ControlClient>>> = Arc::default();
     let s = slot.clone();
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         // Inline opens: this test pins the synchronous open contract (focus vs open vs
         // failure). Live apps schedule the worker instead and reply `pending` (#1620).
@@ -1900,7 +1900,7 @@ fn control_open_replies_pending_while_the_worker_opens_and_focuses_once_it_has()
     let slot: Arc<Mutex<Option<ControlClient>>> = Arc::default();
     let s = slot.clone();
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         *s.lock().unwrap() = Some(app.attach_control(&cc.egui_ctx));
         app
@@ -1932,12 +1932,12 @@ fn control_open_replies_pending_while_the_worker_opens_and_focuses_once_it_has()
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-fn navigation_frame(h: &mut Harness<'static, NovaPdfApp>, events: Vec<egui::Event>) {
+fn navigation_frame(h: &mut Harness<'static, PdfCraftApp>, events: Vec<egui::Event>) {
     h.input_mut().events.extend(events);
     h.step();
 }
 
-fn navigation_wheel(h: &mut Harness<'static, NovaPdfApp>, pos: egui::Pos2, delta: f32, ctrl: bool) {
+fn navigation_wheel(h: &mut Harness<'static, PdfCraftApp>, pos: egui::Pos2, delta: f32, ctrl: bool) {
     let modifiers = egui::Modifiers { ctrl, command: ctrl, ..egui::Modifiers::NONE };
     navigation_frame(
         h,
@@ -2009,7 +2009,7 @@ fn wheel_zoom_is_scoped_to_the_viewport_and_respects_existing_limits() {
 fn initial_zoom_option_is_applied_before_the_first_viewport_layout() {
     for percent in [50, 100, 200, 400] {
         let h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-            let mut app = NovaPdfApp::new();
+            let mut app = PdfCraftApp::new();
             app.open_bytes("initial-zoom.pdf", None, fixture(3)).unwrap();
             app.set_option("zoom", &percent.to_string()).unwrap();
             assert_eq!(app.views[0].zoom, percent as f32 / 100.0, "initial options must work before the viewport exists");
@@ -2049,7 +2049,7 @@ fn click_and_drag_refuse_coordinates_that_overflow_like_move() {
 fn page_size_shows_while_the_pointer_is_in_the_bottom_left_quadrant() {
     let (mut h, _c) = harness();
     let area = h.state().views[0].viewport_rect();
-    let shown = |h: &Harness<'static, NovaPdfApp>| {
+    let shown = |h: &Harness<'static, PdfCraftApp>| {
         let layer = egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("page-size-hint"));
         h.ctx.memory(|m| m.areas().visible_last_frame(&layer))
     };

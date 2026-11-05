@@ -1,11 +1,11 @@
 use super::bookmarks::{BmAction, OutlineCtx, outline_item, outline_matches};
 use super::pages::{page_tools, pages, thumbnail_size};
 use super::{
-    Align, Align2, Color32, DocInfo, FieldKind, Layout, Nav, NovaPdfApp, Rect, RightPanel, Sense, Stroke, Tokens, human_size, icons, theme, vec2,
+    Align, Align2, Color32, DocInfo, FieldKind, Layout, Nav, PdfCraftApp, Rect, RightPanel, Sense, Stroke, Tokens, human_size, icons, theme, vec2,
 };
 
 /// Draw the selected right-hand panel and apply its navigation, layer, bookmark or edit actions.
-pub fn right_panel(app: &mut NovaPdfApp, ui: &mut egui::Ui) {
+pub fn right_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     let Some((index, id)) = app.active_ids() else { return };
     let Some(panel) = app.right else { return };

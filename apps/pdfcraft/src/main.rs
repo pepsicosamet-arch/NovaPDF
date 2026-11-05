@@ -30,7 +30,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use pdfcraft_ui_egui::NovaPdfApp;
+use pdfcraft_ui_egui::PdfCraftApp;
 
 #[cfg(target_os = "macos")]
 mod apple_events;
@@ -395,7 +395,7 @@ fn app_creator<'a>(
     let Launch { files, options, control_file, create_images, integrated, window_controls, two_paged } = launch;
     Box::new(move |cc| {
         started.set(true);
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         // First start (or settings from before Units existed): the region's unit.
         app.units = pdfcraft_ui_egui::units::Unit::system();
         #[cfg(target_os = "linux")]
@@ -484,7 +484,7 @@ fn app_creator<'a>(
 /// a GPU, which makes everything slower. egui-wgpu only logs it, so the reporter of #519 had to find
 /// it in pdfcraft.log. The OpenGL fallback isn't covered: glow only reports its renderer through
 /// `unsafe` calls.
-fn notify_software_renderer(app: &mut NovaPdfApp, device_type: eframe::wgpu::DeviceType) {
+fn notify_software_renderer(app: &mut PdfCraftApp, device_type: eframe::wgpu::DeviceType) {
     if device_type == eframe::wgpu::DeviceType::Cpu {
         app.notify_tr("NOVA PDF is drawing without a graphics processor, so it may be slow. Updating the graphics driver may help.");
     }

@@ -7,7 +7,7 @@ use craft_update::updater::{Action, CheckSource, Status, Updater};
 #[cfg(not(target_arch = "wasm32"))]
 use craft_update::{CheckResultDialog, CheckResultResponse};
 
-use crate::NovaPdfApp;
+use crate::PdfCraftApp;
 
 /// Where every NOVA PDF release is listed.
 pub const RELEASES_PAGE: &str = "https://github.com/pepsicosamet-arch/NovaPDF/releases";
@@ -42,7 +42,7 @@ impl Default for Updates {
     }
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// Whether the app asks for a newer release on its first frame (off until the desktop app turns it on).
     #[cfg(not(target_arch = "wasm32"))]
     pub fn set_startup_update_check(&mut self, on: bool) {
@@ -85,7 +85,7 @@ impl NovaPdfApp {
 }
 
 /// The startup prompt, and the Updates dialog that answers Help ▸ Check for updates.
-pub(crate) fn dialog(app: &mut NovaPdfApp, ctx: &egui::Context) {
+pub(crate) fn dialog(app: &mut PdfCraftApp, ctx: &egui::Context) {
     #[cfg(not(target_arch = "wasm32"))]
     {
         // The restart helper is scheduled before the app closes, so no update starts over unsaved work.

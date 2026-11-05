@@ -316,7 +316,7 @@ fn no_changes_pdf() -> Vec<u8> {
 /// behind once the add was refused.
 #[test]
 fn a_refused_text_box_is_put_back_whole() {
-    let mut app = crate::NovaPdfApp::new();
+    let mut app = crate::PdfCraftApp::new();
     app.set_option("language", "en").unwrap();
     app.open_bytes("a.pdf", None, no_changes_pdf()).unwrap();
     let style = crate::content_ui::default_style();
@@ -340,7 +340,7 @@ fn a_refused_text_box_is_put_back_whole() {
 fn save_commits_the_open_text_box() {
     let dir = staging_dir("open-text-box");
     let dest = dir.join("out.pdf");
-    let mut app = crate::NovaPdfApp::new();
+    let mut app = crate::PdfCraftApp::new();
     app.set_option("language", "en").unwrap();
     app.open_bytes("a.pdf", None, one_page_pdf()).unwrap();
     app.save_override = Some(dest.to_string_lossy().into_owned());
@@ -374,7 +374,7 @@ fn save_asks_where_to_keep_an_email_attachment_and_leaves_the_temporary_copy_alo
     std::fs::write(&attachment, &original).unwrap();
     let kept = dir.join("Quote.pdf");
 
-    let mut app = crate::NovaPdfApp::new();
+    let mut app = crate::PdfCraftApp::new();
     app.set_option("language", "en").unwrap();
     app.open_bytes("Quote.pdf", Some(attachment.to_string_lossy().into_owned()), original.clone()).unwrap();
     assert!(app.apply_edit(pdfcraft_engine::Edit::RotatePages { pages: vec![0], degrees: 90 }));

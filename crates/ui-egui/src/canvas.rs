@@ -15,7 +15,7 @@ use pdfcraft_render::{DestView, DocInfo, LayerOp, LinkTarget, PRINT_TAG, PageTex
 use crate::page_cursor::Layer;
 use crate::page_pointer::PagePointer;
 use crate::theme::{self, Tokens};
-use crate::{NovaPdfApp, QuickTool, RightPanel, comments, icons, widgets};
+use crate::{PdfCraftApp, QuickTool, RightPanel, comments, icons, widgets};
 
 mod area;
 pub(crate) mod autoscroll;
@@ -438,7 +438,7 @@ pub struct Snapshot {
 /// A snapshot reads like its source document, plus the snapshot suffix that tells
 /// the tabs apart. Without a title the file name (which already carries the suffix)
 /// is enough.
-pub(crate) fn tab_label(app: &NovaPdfApp, index: usize) -> Option<String> {
+pub(crate) fn tab_label(app: &PdfCraftApp, index: usize) -> Option<String> {
     let view = app.views.get(index)?;
     let doc = app.session.get(view.id)?;
     let Some(snap) = view.snapshot.as_ref() else { return Some(doc.display_name()) };
@@ -2358,7 +2358,7 @@ fn plan_renders(ui: &egui::Ui, view: &mut DocView, info: &DocInfo, renders: Page
 }
 
 /// Acts on the notice bar button that was clicked.
-fn apply_notice(app: &mut NovaPdfApp, index: usize, notice: Option<Notice>) {
+fn apply_notice(app: &mut PdfCraftApp, index: usize, notice: Option<Notice>) {
     match notice {
         #[cfg(not(target_arch = "wasm32"))]
         Some(Notice::Reload) => app.watch.reload_request = app.views.get(index).map(|view| view.id),
@@ -2390,7 +2390,7 @@ fn apply_notice(app: &mut NovaPdfApp, index: usize, notice: Option<Notice>) {
 /// The snapshot notice bar's Close was clicked: close here, where no document borrow is held. The
 /// tab is looked up by id: indices may have shifted since the click, and the flag rides its own
 /// view, so a stale flag can never close the wrong tab. Whether a tab was closed (or asked about).
-fn close_requested_tab(app: &mut NovaPdfApp, index: usize) -> bool {
+fn close_requested_tab(app: &mut PdfCraftApp, index: usize) -> bool {
     let pending = app.views.get(index).filter(|v| v.close_requested).map(|v| v.id).and_then(|id| app.views.iter().position(|v| v.id == id));
     let Some(i) = pending else { return false };
     app.views[i].close_requested = false;
@@ -2608,7 +2608,7 @@ fn schedule_presentation_turn(ui: &egui::Ui, view: &mut DocView, click: Option<b
 /// Follows the link that was clicked. A link to another file comes back, to be opened once the
 /// document is no longer borrowed.
 fn follow_link(
-    app: &mut NovaPdfApp,
+    app: &mut PdfCraftApp,
     index: usize,
     target: Option<LinkTarget>,
 ) -> Option<(pdfcraft_engine::DocId, String, pdfcraft_render::RemoteDestination)> {
@@ -2630,7 +2630,7 @@ fn follow_link(
 
 /// A finished marquee zoom, a signature rectangle drawn, or an empty signature field clicked.
 /// Returns the tool to go on with.
-fn finish_sign_requests(app: &mut NovaPdfApp, index: usize, mut tool: QuickTool) -> QuickTool {
+fn finish_sign_requests(app: &mut PdfCraftApp, index: usize, mut tool: QuickTool) -> QuickTool {
     if let Some(done) = app.views[index].marquee_done.take() {
         app.finish_marquee(index, done);
     }
@@ -2820,7 +2820,7 @@ fn refine_goto_point(mut scroll: egui::ScrollArea, view: &mut DocView, geometry:
 
 /// Draws the document tab at `index`: its notice bars, then its pages (or the Organize grid) in a
 /// scroll area with this frame's zoom, scrolling, tool input, overlays and render requests.
-pub fn document_area(app: &mut NovaPdfApp, index: usize, ui: &mut egui::Ui) {
+pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     let can_paste_key = egui::Id::unique("can-paste-image");
     let can_paste_image = if ui.input(|i| i.pointer.secondary_pressed()) {
@@ -3215,7 +3215,7 @@ struct FrameRequests {
 
 /// Opens the dialogs and runs the app commands the frame asked for.
 #[allow(clippy::cognitive_complexity)]
-fn apply_frame_requests(app: &mut NovaPdfApp, index: usize, ui: &mut egui::Ui, requests: FrameRequests) {
+fn apply_frame_requests(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui, requests: FrameRequests) {
     let FrameRequests {
         open_props,
         field_props,

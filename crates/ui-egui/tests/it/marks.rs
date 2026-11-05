@@ -4,7 +4,7 @@ use crate::support;
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use pdfcraft_engine::MarkKind;
-use pdfcraft_ui_egui::{Dialog, NovaPdfApp};
+use pdfcraft_ui_egui::{Dialog, PdfCraftApp};
 
 const FIXTURE: &[u8] = b"%PDF-1.7
 1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
@@ -15,13 +15,13 @@ const FIXTURE: &[u8] = b"%PDF-1.7
 trailer << /Root 1 0 R >>
 %%EOF";
 
-fn harness() -> Harness<'static, NovaPdfApp> {
+fn harness() -> Harness<'static, PdfCraftApp> {
     harness_with(FIXTURE.to_vec())
 }
 
-fn harness_with(pdf: Vec<u8>) -> Harness<'static, NovaPdfApp> {
+fn harness_with(pdf: Vec<u8>) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("doc.pdf", None, pdf.clone()).unwrap();
         app
@@ -30,7 +30,7 @@ fn harness_with(pdf: Vec<u8>) -> Harness<'static, NovaPdfApp> {
     h
 }
 
-fn marks(h: &Harness<'static, NovaPdfApp>) -> Vec<MarkKind> {
+fn marks(h: &Harness<'static, PdfCraftApp>) -> Vec<MarkKind> {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().marks().to_vec()
 }
@@ -171,13 +171,13 @@ fn backdrop_fixture() -> Vec<u8> {
 #[test]
 fn the_background_dialog_offers_to_replace_a_white_backdrop_and_warns_about_scans() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("doc.pdf", None, backdrop_fixture()).unwrap();
         app
     });
     h.run_steps(4);
-    let backdrop = |h: &Harness<'static, NovaPdfApp>, page| {
+    let backdrop = |h: &Harness<'static, PdfCraftApp>, page| {
         let s = h.state();
         s.session.get(s.views[0].id).unwrap().page_backdrop(page)
     };
@@ -222,7 +222,7 @@ fn the_background_dialog_offers_to_replace_a_white_backdrop_and_warns_about_scan
 #[test]
 fn the_background_preview_follows_the_replace_checkbox() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("doc.pdf", None, backdrop_fixture()).unwrap();
         app
@@ -234,7 +234,7 @@ fn the_background_preview_follows_the_replace_checkbox() {
     h.get_by_label(replace);
     let [red, green, blue] = pdfcraft_engine::Background::default().color.map(|c| (c * 255.0).round() as u8);
     let colour = egui::Color32::from_rgb(red, green, blue);
-    let tint = |h: &mut Harness<'static, NovaPdfApp>, page: usize| {
+    let tint = |h: &mut Harness<'static, PdfCraftApp>, page: usize| {
         h.state_mut().marks_draft.preview = Some(page);
         h.run_steps(2);
         wait_for_picture(h, page).2
@@ -268,7 +268,7 @@ fn remove_background_says_which_pages_keep_their_own_backdrop_off() {
         copy.len()
     );
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("doc.pdf", None, fixture.into_bytes()).unwrap();
         app
@@ -305,7 +305,7 @@ trailer << /Root 1 0 R >>
 }
 
 /// The pictures of page `page` (its thumbnail) painted last frame: paint order, bounds, tint.
-fn page_pictures(h: &Harness<'static, NovaPdfApp>, page: usize) -> Vec<(usize, egui::Rect, egui::Color32)> {
+fn page_pictures(h: &Harness<'static, PdfCraftApp>, page: usize) -> Vec<(usize, egui::Rect, egui::Color32)> {
     let Some(tex) = h.state().views[0].thumb(page).map(|t| t.id()) else { return Vec::new() };
     h.output()
         .shapes
@@ -319,7 +319,7 @@ fn page_pictures(h: &Harness<'static, NovaPdfApp>, page: usize) -> Vec<(usize, e
 }
 
 /// The preview's picture of `page`, once its thumbnail has arrived (it renders off the UI thread).
-fn wait_for_picture(h: &mut Harness<'static, NovaPdfApp>, page: usize) -> (usize, egui::Rect, egui::Color32) {
+fn wait_for_picture(h: &mut Harness<'static, PdfCraftApp>, page: usize) -> (usize, egui::Rect, egui::Color32) {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
     loop {
         h.step();
@@ -333,7 +333,7 @@ fn wait_for_picture(h: &mut Harness<'static, NovaPdfApp>, page: usize) -> (usize
 
 /// A text painted on the page last frame (the dialog's text boxes show it too): its paint order
 /// and its laid-out rectangle.
-fn painted(h: &Harness<'static, NovaPdfApp>, text: &str, page: egui::Rect) -> (usize, egui::Rect) {
+fn painted(h: &Harness<'static, PdfCraftApp>, text: &str, page: egui::Rect) -> (usize, egui::Rect) {
     h.output()
         .shapes
         .iter()
@@ -407,7 +407,7 @@ fn the_preview_shows_the_page_the_range_selects_under_the_marks() {
 
 /// The preview's page stepper, beside its "page N of M" label: the dialog's own button, not the
 /// page navigation's of the same name.
-fn preview_step(h: &mut Harness<'static, NovaPdfApp>, label: &str, now: &str) {
+fn preview_step(h: &mut Harness<'static, PdfCraftApp>, label: &str, now: &str) {
     let row = h.get_by_label(now).rect().center().y;
     h.query_all_by_label(label).find(|n| (n.rect().center().y - row).abs() < 15.0).unwrap_or_else(|| panic!("{label} beside {now:?}")).click();
     h.run_steps(2);
@@ -458,7 +458,7 @@ impl egui_kittest::TestRenderer for Uploads {
 
 /// The page picture the dialog's preview painted last frame, left of its "Preview: page …" label,
 /// once its texture is in: its tint and its image.
-fn preview_picture(h: &Harness<'static, NovaPdfApp>, uploads: &Uploads) -> Option<(egui::Color32, std::sync::Arc<egui::ColorImage>)> {
+fn preview_picture(h: &Harness<'static, PdfCraftApp>, uploads: &Uploads) -> Option<(egui::Color32, std::sync::Arc<egui::ColorImage>)> {
     let label = h.query_by_label_contains("Preview: page")?.rect();
     h.output().shapes.iter().find_map(|s| {
         let egui::Shape::Mesh(m) = &s.shape else { return None };
@@ -481,7 +481,7 @@ fn preview_picture(h: &Harness<'static, NovaPdfApp>, uploads: &Uploads) -> Optio
 
 /// [`preview_picture`], waiting until `ready` accepts it (the page renders off the UI thread).
 fn wait_for_preview(
-    h: &mut Harness<'static, NovaPdfApp>,
+    h: &mut Harness<'static, PdfCraftApp>,
     uploads: &Uploads,
     what: &str,
     ready: impl Fn(&egui::ColorImage) -> bool,
@@ -522,7 +522,7 @@ fn update_previews_the_page_without_the_marks_it_replaces() {
     let uploads = Uploads::default();
     let pdf = content_fixture();
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).renderer(uploads.clone()).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("doc.pdf", None, pdf.clone()).unwrap();
         app
@@ -532,7 +532,7 @@ fn update_previews_the_page_without_the_marks_it_replaces() {
     let red = |c: egui::Color32| c.r() > 200 && c.g() < 80 && c.b() < 80;
     let blue = |c: egui::Color32| c.b() > 150 && c.r() < 100 && c.g() < 100;
     let dark = |c: egui::Color32| c.r() < 60 && c.g() < 60 && c.b() < 60;
-    let apply = |h: &mut Harness<'static, NovaPdfApp>, command: &str, draft: &dyn Fn(&mut pdfcraft_ui_egui::marks::MarksDraft)| {
+    let apply = |h: &mut Harness<'static, PdfCraftApp>, command: &str, draft: &dyn Fn(&mut pdfcraft_ui_egui::marks::MarksDraft)| {
         assert!(h.state_mut().execute(command));
         h.run_steps(2);
         draft(&mut h.state_mut().marks_draft);
@@ -567,7 +567,7 @@ fn update_previews_the_page_without_the_marks_it_replaces() {
     h.step();
     // Update shows the page without the marks from the frame it opens: neither a blank sheet nor
     // the old marks while it renders.
-    let shown = |h: &Harness<'static, NovaPdfApp>| preview_picture(h, &uploads).expect("a page is previewed");
+    let shown = |h: &Harness<'static, PdfCraftApp>| preview_picture(h, &uploads).expect("a page is previewed");
     let (tint, page) = shown(&h);
     assert_eq!(tint, egui::Color32::from_rgb(153, 204, 255), "the new colour tints the page");
     assert_eq!(at(&page, 0.5, 0.75), egui::Color32::WHITE, "the page is previewed without the yellow background");

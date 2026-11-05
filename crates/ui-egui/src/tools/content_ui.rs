@@ -881,7 +881,7 @@ pub(crate) fn hint(ui: &mut egui::Ui, t: &Tokens) {
     ui.add_space(4.0);
 }
 
-impl crate::NovaPdfApp {
+impl crate::PdfCraftApp {
     /// Pick an image file for the active document, read it, and call `then` with its name and
     /// bytes: now when `save_override` answers (tests and automation never see a native dialog),
     /// otherwise on a later frame, and only if that document is still the active one.
@@ -1356,7 +1356,7 @@ mod tests {
 
     #[test]
     fn delivered_pixels_are_bounded_before_cache_or_document_changes() {
-        let mut app = crate::NovaPdfApp::new();
+        let mut app = crate::PdfCraftApp::new();
         app.create_blank();
         app.last_copied_image = Some((1, 1, vec![0, 255, 0, 255]));
         let before = app.last_copied_image.clone();
@@ -1371,7 +1371,7 @@ mod tests {
 
     #[test]
     fn delivered_pixels_keep_unpremultiplied_alpha() {
-        let mut app = crate::NovaPdfApp::new();
+        let mut app = crate::PdfCraftApp::new();
         app.create_blank();
         let image = egui::ColorImage::from_rgba_unmultiplied([1, 1], &[255, 0, 0, 128]);
         assert!(app.paste_received_image(0, &image));
@@ -1380,7 +1380,7 @@ mod tests {
 
     #[test]
     fn review_web_can_paste_an_internal_image_without_a_native_clipboard() {
-        let mut app = crate::NovaPdfApp::new();
+        let mut app = crate::PdfCraftApp::new();
         app.create_blank();
         app.system_clipboard = true;
         app.last_copied_image = Some((1, 1, vec![255, 0, 0, 255]));
@@ -1391,7 +1391,7 @@ mod tests {
 
     #[test]
     fn review_system_without_supported_formats_does_not_paste_a_cached_image() {
-        let mut app = crate::NovaPdfApp::new();
+        let mut app = crate::PdfCraftApp::new();
         app.create_blank();
         app.system_clipboard = true;
         app.last_copied_image = Some((1, 1, vec![255, 0, 0, 255]));
@@ -1400,7 +1400,7 @@ mod tests {
 
     #[test]
     fn review_cut_checks_modify_permission_before_writing_the_clipboard() {
-        let mut app = crate::NovaPdfApp::new();
+        let mut app = crate::PdfCraftApp::new();
         app.system_clipboard = false;
         app.create_blank();
         let png = crate::create_ui::png_from_rgba(1, 1, &[255, 0, 0, 255]).unwrap();
@@ -1413,7 +1413,7 @@ mod tests {
         }));
         let id = app.active_ids().unwrap().1;
         let bytes = app.session.save_bytes(id).unwrap();
-        let mut locked = crate::NovaPdfApp::new();
+        let mut locked = crate::PdfCraftApp::new();
         locked.system_clipboard = false;
         locked.open_bytes("locked.pdf", None, bytes.as_ref().clone()).unwrap();
         assert!(!locked.session.get(locked.active_ids().unwrap().1).unwrap().allows_modification());
@@ -1425,7 +1425,7 @@ mod tests {
 
     #[test]
     fn system_text_prevents_context_menu_paste_of_a_cached_image() {
-        let mut app = crate::NovaPdfApp::new();
+        let mut app = crate::PdfCraftApp::new();
         app.system_clipboard = false;
         app.create_blank();
         let id = app.active_ids().unwrap().1;

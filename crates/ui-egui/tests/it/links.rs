@@ -4,11 +4,11 @@
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use pdfcraft_engine::links;
-use pdfcraft_ui_egui::{Dialog, NovaPdfApp};
+use pdfcraft_ui_egui::{Dialog, PdfCraftApp};
 
-fn harness(setup: impl FnOnce(&mut NovaPdfApp) + 'static) -> Harness<'static, NovaPdfApp> {
+fn harness(setup: impl FnOnce(&mut PdfCraftApp) + 'static) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         setup(&mut app);
         app
@@ -52,7 +52,7 @@ fn home_community_card_closes_for_this_run() {
     assert!(h.query_by_label("Join the ArtCraft community").is_none());
     assert!(h.query_by_label("Join our Discord").is_none());
     // Not remembered: a fresh app shows the card again.
-    assert!(!NovaPdfApp::new().community_card_closed);
+    assert!(!PdfCraftApp::new().community_card_closed);
 }
 
 #[test]
@@ -86,7 +86,7 @@ fn help_commands_open_each_link() {
 /// fixed number of frames is a guess at how long that takes: it was too few after the 0.5.0
 /// contributors refresh (78 names instead of 5) on some machines, the click on Table landed where
 /// the button had been, and the table never opened (#671).
-fn settled<'a>(h: &'a mut Harness<'static, NovaPdfApp>, label: &'a str) -> egui_kittest::Node<'a> {
+fn settled<'a>(h: &'a mut Harness<'static, PdfCraftApp>, label: &'a str) -> egui_kittest::Node<'a> {
     let mut last = None;
     for _ in 0..60 {
         h.run_steps(1);

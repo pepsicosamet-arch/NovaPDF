@@ -3,7 +3,7 @@
 
 use egui::{CornerRadius, Rect, RichText, Stroke, pos2, vec2};
 
-use crate::NovaPdfApp;
+use crate::PdfCraftApp;
 use crate::theme::{self, ThemeKind, ThemePreference, Tokens};
 
 /// The themes each card offers. One of each today; a new theme is one more row here.
@@ -130,7 +130,7 @@ fn card(ui: &mut egui::Ui, t: &Tokens, title: &str, active: bool, themes: &[(The
 
 /// The Appearance section of Preferences.
 #[cfg_attr(not(test), expect(dead_code, reason = "called by unit tests"))]
-pub fn preferences_section(ui: &mut egui::Ui, app: &mut NovaPdfApp, t: &Tokens) {
+pub fn preferences_section(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) {
     let mut ctx = crate::dialogs::preferences::PrefSearchContext::new("", false);
     preferences_section_with_context(ui, app, t, &mut ctx);
 }
@@ -138,7 +138,7 @@ pub fn preferences_section(ui: &mut egui::Ui, app: &mut NovaPdfApp, t: &Tokens) 
 /// The Appearance section of Preferences with live search highlighting and scrolling context.
 pub(crate) fn preferences_section_with_context(
     ui: &mut egui::Ui,
-    app: &mut NovaPdfApp,
+    app: &mut PdfCraftApp,
     t: &Tokens,
     ctx: &mut crate::dialogs::preferences::PrefSearchContext,
 ) {
@@ -194,11 +194,11 @@ mod tests {
     /// Active.
     #[test]
     fn preferences_choose_the_appearance_mode_and_show_both_themes() {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         let mut fonts = false;
         let mut h = Harness::builder().with_size(egui::vec2(640.0, 400.0)).build_ui_state(
-            move |ui, app: &mut NovaPdfApp| {
+            move |ui, app: &mut PdfCraftApp| {
                 // The app's fonts (the semibold headings) take effect from the next frame.
                 if !fonts {
                     ui.ctx().set_fonts(theme::font_definitions());
@@ -239,11 +239,11 @@ mod tests {
     /// Clicking a theme card picks that theme, not only the mode combo box.
     #[test]
     fn clicking_a_theme_card_picks_that_theme() {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         let mut fonts = false;
         let mut h = Harness::builder().with_size(egui::vec2(640.0, 400.0)).build_ui_state(
-            move |ui, app: &mut NovaPdfApp| {
+            move |ui, app: &mut PdfCraftApp| {
                 if !fonts {
                     ui.ctx().set_fonts(theme::font_definitions());
                     fonts = true;

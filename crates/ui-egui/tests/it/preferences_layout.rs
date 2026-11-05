@@ -4,11 +4,11 @@
 use egui::Rect;
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::NovaPdfApp;
+use pdfcraft_ui_egui::PdfCraftApp;
 
-fn harness(height: f32) -> Harness<'static, NovaPdfApp> {
+fn harness(height: f32) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1000.0, height)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.set_option("dialog", "preferences").unwrap();
         app
@@ -78,7 +78,7 @@ fn the_dialog_opens_at_its_full_size_and_does_not_grow_afterwards() {
     // And it is in place within a few frames of opening, for the first click: a frame or two of
     // settling is fine, ten frames of stretching is not.
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app
     });

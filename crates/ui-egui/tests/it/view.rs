@@ -3,7 +3,7 @@
 use egui::{Key, Modifiers, MouseWheelUnit, TouchPhase};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::NovaPdfApp;
+use pdfcraft_ui_egui::PdfCraftApp;
 
 /// Three 300×400 pt pages. Page 1 links to page 3.
 const PAGES: &[u8] = b"%PDF-1.7
@@ -18,14 +18,14 @@ trailer << /Root 1 0 R >>
 
 use crate::gpu;
 
-fn harness(options: &'static [(&'static str, &'static str)]) -> Harness<'static, NovaPdfApp> {
+fn harness(options: &'static [(&'static str, &'static str)]) -> Harness<'static, PdfCraftApp> {
     harness_stepping(1.0 / 4.0, options)
 }
 
 /// [`harness`] with frames `step_dt` seconds apart (a quarter second is kittest's default).
-fn harness_stepping(step_dt: f32, options: &'static [(&'static str, &'static str)]) -> Harness<'static, NovaPdfApp> {
+fn harness_stepping(step_dt: f32, options: &'static [(&'static str, &'static str)]) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_step_dt(step_dt).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("pages.pdf", None, PAGES.to_vec()).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -39,11 +39,11 @@ fn harness_stepping(step_dt: f32, options: &'static [(&'static str, &'static str
     h
 }
 
-fn rect(h: &Harness<'static, NovaPdfApp>, page: usize) -> Option<egui::Rect> {
+fn rect(h: &Harness<'static, PdfCraftApp>, page: usize) -> Option<egui::Rect> {
     h.state().views[0].page_screen_rect(page)
 }
 
-fn sidebar_key(h: &mut Harness<'static, NovaPdfApp>, key: Key, modifiers: Modifiers) {
+fn sidebar_key(h: &mut Harness<'static, PdfCraftApp>, key: Key, modifiers: Modifiers) {
     h.event(egui::Event::ModifiersChanged(modifiers));
     for pressed in [true, false] {
         h.event(egui::Event::Key { key, physical_key: None, pressed, repeat: false, modifiers });
@@ -105,9 +105,9 @@ const MIXED: &[u8] = b"%PDF-1.7
 trailer << /Root 1 0 R >>
 %%EOF";
 
-fn mixed_harness(options: &'static [(&'static str, &'static str)]) -> Harness<'static, NovaPdfApp> {
+fn mixed_harness(options: &'static [(&'static str, &'static str)]) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("mixed.pdf", None, MIXED.to_vec()).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -233,9 +233,9 @@ fn page_gaps_in_organizer_do_not_move_the_document_scroll_position() {
 }
 
 /// A three-page comparison, with the old pane leading while the new document stays active.
-fn page_gaps_comparison_harness() -> Harness<'static, NovaPdfApp> {
+fn page_gaps_comparison_harness() -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.set_option("left", "closed").unwrap();
         app.open_bytes("old.pdf", None, PAGES.to_vec()).unwrap();
@@ -284,9 +284,9 @@ fn page_gaps_comparison_control_preserves_both_states() {
 /// The saved default survives restart and applies to newly opened documents.
 #[test]
 fn page_gaps_default_survives_restart_and_applies_to_new_documents() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.set_option("default-page-gaps", "off").unwrap();
-    let mut restored = NovaPdfApp::new();
+    let mut restored = PdfCraftApp::new();
     restored.restore(&app.persist());
     restored.open_bytes("pages.pdf", None, PAGES.to_vec()).unwrap();
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| restored);
@@ -338,7 +338,7 @@ fn page_gaps_work_for_mixed_sizes_and_two_page_rows() {
 fn page_gaps_stay_closed_at_fractional_device_scales() {
     for ppp in [1.0, 1.25, 1.5, 2.0] {
         let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_pixels_per_point(ppp).build_eframe(|_cc| {
-            let mut app = NovaPdfApp::new();
+            let mut app = PdfCraftApp::new();
             app.open_bytes("pages.pdf", None, PAGES.to_vec()).unwrap();
             for (key, value) in [("left", "closed"), ("panel", "none"), ("layout", "continuous"), ("zoom", "43"), ("page-gaps", "off")] {
                 app.set_option(key, value).unwrap();
@@ -492,7 +492,7 @@ fn single_page_swipe_that_reaches_the_edge_does_not_turn_but_a_fresh_one_does() 
     let at = h.state().views[0].viewport_rect().center();
     h.hover_at(at);
     h.run_steps(4);
-    let send = |h: &mut Harness<'static, NovaPdfApp>, phase, dy| {
+    let send = |h: &mut Harness<'static, PdfCraftApp>, phase, dy| {
         h.event(wheel(MouseWheelUnit::Point, dy, phase));
         h.step();
     };
@@ -856,8 +856,8 @@ fn scroll_regression_key_interrupt_retains_current_wheel_input() {
 /// Steps `frames` frames and returns how far the document scrolled down over them, from the
 /// pages on screen in each pair of consecutive frames (a page can leave the screen on the way).
 /// Used by wheel and non-macOS glide tests below.
-fn scroll_over(h: &mut Harness<'static, NovaPdfApp>, frames: usize) -> f32 {
-    let tops = |h: &Harness<'static, NovaPdfApp>| (0..3).map(|p| rect(h, p).map(|r| r.min.y)).collect::<Vec<_>>();
+fn scroll_over(h: &mut Harness<'static, PdfCraftApp>, frames: usize) -> f32 {
+    let tops = |h: &Harness<'static, PdfCraftApp>| (0..3).map(|p| rect(h, p).map(|r| r.min.y)).collect::<Vec<_>>();
     let mut moved = 0.0;
     for _ in 0..frames {
         let before = tops(h);
@@ -874,7 +874,7 @@ fn scroll_over(h: &mut Harness<'static, NovaPdfApp>, frames: usize) -> f32 {
 /// it scrolled by the frame after the lift (the page is drawn a frame behind its scroll).
 /// Same gate as its callers below.
 #[cfg(not(target_os = "macos"))]
-fn swipe_and_lift(h: &mut Harness<'static, NovaPdfApp>) -> f32 {
+fn swipe_and_lift(h: &mut Harness<'static, PdfCraftApp>) -> f32 {
     let at = h.state().views[0].viewport_rect().center();
     h.hover_at(at);
     h.run_steps(2);
@@ -1060,7 +1060,7 @@ fn layout_option_rejects_typos() {
 
 #[test]
 fn view_options_without_a_document() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.set_option("language", "en").unwrap();
     assert!(app.set_option("default-layout", "single").is_ok(), "the default needs no document");
     assert_eq!(app.view_defaults.layout, pdfcraft_ui_egui::canvas::PageLayout::Single);
@@ -1072,8 +1072,8 @@ fn view_options_without_a_document() {
 fn default_page_display_is_used_for_new_documents() {
     use pdfcraft_ui_egui::canvas::PageLayout;
     // The factory default is single page, scrolling continuously, without snap jumps.
-    assert_eq!(NovaPdfApp::new().view_defaults.layout, PageLayout::Single);
-    assert!(NovaPdfApp::new().view_defaults.continuous);
+    assert_eq!(PdfCraftApp::new().view_defaults.layout, PageLayout::Single);
+    assert!(PdfCraftApp::new().view_defaults.continuous);
     let mut h = harness(&[]);
     h.state_mut().set_option("default-layout", "single").unwrap();
     h.state_mut().open_bytes("other.pdf", None, PAGES.to_vec()).expect("opens");
@@ -1083,7 +1083,7 @@ fn default_page_display_is_used_for_new_documents() {
     assert_eq!(h.state().views[2].layout, PageLayout::Single);
     // Persisted preferences survive a restart.
     let saved = h.state().persist();
-    let mut fresh = NovaPdfApp::new();
+    let mut fresh = PdfCraftApp::new();
     fresh.set_option("language", "en").unwrap();
     fresh.restore(&saved);
     assert_eq!(fresh.view_defaults.layout, PageLayout::Single);
@@ -1092,7 +1092,7 @@ fn default_page_display_is_used_for_new_documents() {
     assert_eq!(fresh.view_defaults.layout, PageLayout::Single);
     fresh.restore(r#"{"default_layout":"TWO-UP"}"#);
     assert_eq!(fresh.view_defaults.layout, PageLayout::TwoUp);
-    let mut legacy = NovaPdfApp::new();
+    let mut legacy = PdfCraftApp::new();
     legacy.set_option("language", "en").unwrap();
     legacy.restore("{}");
     assert_eq!(legacy.view_defaults.layout, PageLayout::Single);
@@ -1102,7 +1102,7 @@ fn default_page_display_is_used_for_new_documents() {
 #[test]
 fn default_zoom_is_used_for_new_documents() {
     use pdfcraft_ui_egui::canvas::Fit;
-    let fit_zoom = |app: &NovaPdfApp, i: usize| (app.views[i].fit, app.views[i].zoom);
+    let fit_zoom = |app: &PdfCraftApp, i: usize| (app.views[i].fit, app.views[i].zoom);
     let mut h = harness(&[]);
     // The factory default fits the width.
     assert_eq!(h.state().views[0].fit, Fit::Width);
@@ -1122,7 +1122,7 @@ fn default_zoom_is_used_for_new_documents() {
     }
     // Saved settings keep it, and garbage leaves it alone.
     let saved = h.state().persist();
-    let mut fresh = NovaPdfApp::new();
+    let mut fresh = PdfCraftApp::new();
     fresh.set_option("language", "en").unwrap();
     fresh.restore(&saved);
     fresh.restore(r#"{"default_zoom":"bogus"}"#);
@@ -1136,7 +1136,7 @@ fn the_rail_zoom_field_sets_a_typed_zoom() {
     use egui_kittest::kittest::Queryable;
     use pdfcraft_ui_egui::canvas::Fit;
     let mut h = harness(&[]);
-    let type_zoom = |h: &mut Harness<'static, NovaPdfApp>, typed: &str, key: Key| {
+    let type_zoom = |h: &mut Harness<'static, PdfCraftApp>, typed: &str, key: Key| {
         h.get_by_role_and_label(Role::TextInput, "Zoom").click();
         h.run_steps(2);
         h.get_by_role_and_label(Role::TextInput, "Zoom").type_text(typed);
@@ -1165,7 +1165,7 @@ fn always_use_my_default_zoom_and_page_layout_ignores_what_the_pdf_asks_for() {
     // Opens on page 2 at fit page, two pages side by side.
     let asks = String::from_utf8_lossy(PAGES).replace("/Pages 2 0 R >>", "/Pages 2 0 R /OpenAction [4 0 R /Fit] /PageLayout /TwoPageLeft >>");
     let open = |always: Option<&str>| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         if let Some(on) = always {
             app.set_option("always-default-view", on).unwrap();
@@ -1179,20 +1179,20 @@ fn always_use_my_default_zoom_and_page_layout_ignores_what_the_pdf_asks_for() {
     assert_eq!(open(Some("off")), (Fit::Page, PageLayout::TwoUp, false, 1));
     // On: Default zoom and Default page display; the page it opens at is still the document's.
     assert_eq!(open(Some("on")), (Fit::Width, PageLayout::Single, true, 1));
-    assert!(NovaPdfApp::new().set_option("always-default-view", "yes").is_err());
+    assert!(PdfCraftApp::new().set_option("always-default-view", "yes").is_err());
 }
 
 #[test]
 fn always_use_my_default_zoom_and_page_layout_survives_a_restart() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     assert!(!app.always_default_view, "off by default");
     app.always_default_view = true;
-    let mut restarted = NovaPdfApp::new();
+    let mut restarted = PdfCraftApp::new();
     restarted.restore(&app.persist());
     assert!(restarted.always_default_view, "the choice is kept");
     restarted.restore(r#"{"always_default_view":"bogus"}"#);
     assert!(restarted.always_default_view, "garbage leaves it alone");
-    let mut legacy = NovaPdfApp::new();
+    let mut legacy = PdfCraftApp::new();
     legacy.restore("{}");
     assert!(!legacy.always_default_view, "a legacy file without the key keeps it off");
 }
@@ -1230,13 +1230,13 @@ fn rail_page_display_menu_offers_acrobats_view_choices() {
     use pdfcraft_ui_egui::canvas::{Fit, PageLayout};
     let mut h = harness(&[]);
     h.run_steps(4);
-    let pick = |h: &mut Harness<'static, NovaPdfApp>, item: &str| {
+    let pick = |h: &mut Harness<'static, PdfCraftApp>, item: &str| {
         h.get_by_label_contains("Page display:").click();
         h.run_steps(3);
         h.get_by_label(item).click();
         h.run_steps(4);
     };
-    let shown = |h: &Harness<'static, NovaPdfApp>| (h.state().views[0].layout, h.state().views[0].continuous(), h.state().views[0].fit);
+    let shown = |h: &Harness<'static, PdfCraftApp>| (h.state().views[0].layout, h.state().views[0].continuous(), h.state().views[0].fit);
     pick(&mut h, "Fit one full page");
     assert_eq!(shown(&h), (PageLayout::Single, false, Fit::Page), "one full page at a time, not scrolling");
     // The whole page fits at once, so the wheel turns pages without zooming out first.
@@ -1379,14 +1379,14 @@ const DESTS: &[u8] = b"%PDF-1.7
 trailer << /Root 1 0 R >>
 %%EOF";
 
-fn dests_harness() -> Harness<'static, NovaPdfApp> {
+fn dests_harness() -> Harness<'static, PdfCraftApp> {
     bookmarks_harness("dests.pdf", DESTS)
 }
 
 /// `pdf` open with the Bookmarks panel showing, once the window's layout holds still.
-fn bookmarks_harness(name: &'static str, pdf: &'static [u8]) -> Harness<'static, NovaPdfApp> {
+fn bookmarks_harness(name: &'static str, pdf: &'static [u8]) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes(name, None, pdf.to_vec()).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -1409,7 +1409,7 @@ fn bookmarks_harness(name: &'static str, pdf: &'static [u8]) -> Harness<'static,
 
 /// Where the point a fraction (`fx`, `fy`) across and down `page` is on screen, relative to the
 /// viewport's top-left corner.
-fn from_viewport_corner(h: &Harness<'static, NovaPdfApp>, page: usize, fx: f32, fy: f32) -> egui::Vec2 {
+fn from_viewport_corner(h: &Harness<'static, PdfCraftApp>, page: usize, fx: f32, fy: f32) -> egui::Vec2 {
     let (r, vp) = (rect(h, page).expect("page on screen"), h.state().views[0].viewport_rect());
     egui::pos2(r.min.x + fx * r.width(), r.min.y + fy * r.height()) - vp.min
 }
@@ -1520,9 +1520,9 @@ endstream endobj
 trailer << /Root 1 0 R >>
 %%EOF";
 
-fn form_harness() -> Harness<'static, NovaPdfApp> {
+fn form_harness() -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("form.pdf", None, FORM.to_vec()).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -1556,7 +1556,7 @@ fn highlight_fields_tints_the_field_area() {
     let r = rect(&h, 0).expect("page 1");
     // The field spans x 50..250, y 300..330 (PDF space, y up) on a 300×400 page; sample inside it.
     let at = egui::pos2(r.min.x + r.width() * (60.0 / 300.0), r.min.y + r.height() * (1.0 - 305.0 / 400.0));
-    let pixel = |h: &mut Harness<'static, NovaPdfApp>| {
+    let pixel = |h: &mut Harness<'static, PdfCraftApp>| {
         let img = h.render().expect("renders");
         let ppp = h.ctx.pixels_per_point();
         *img.get_pixel((at.x * ppp) as u32, (at.y * ppp) as u32)
@@ -1585,7 +1585,7 @@ trailer << /Root 1 0 R >>
 #[test]
 fn highlight_fields_leaves_read_only_fields_alone() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("locked.pdf", None, LOCKED.to_vec()).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -1616,7 +1616,7 @@ trailer << /Root 1 0 R >>
 #[test]
 fn highlight_fields_leaves_a_groups_read_only_button_alone() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("radio.pdf", None, LOCKED_RADIO.to_vec()).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -1635,7 +1635,7 @@ fn highlight_fields_leaves_a_groups_read_only_button_alone() {
 #[test]
 fn a_groups_read_only_button_is_not_chosen_by_a_click() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("radio.pdf", None, LOCKED_RADIO.to_vec()).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -1646,7 +1646,7 @@ fn a_groups_read_only_button_is_not_chosen_by_a_click() {
     let r = rect(&h, 0).expect("page 1");
     // The buttons' centers on the 300×400 pt page (y up).
     let at = |x: f32, y: f32| egui::pos2(r.min.x + r.width() * (x / 300.0), r.min.y + r.height() * (1.0 - y / 400.0));
-    let click = |h: &mut Harness<'static, NovaPdfApp>, pos: egui::Pos2| {
+    let click = |h: &mut Harness<'static, PdfCraftApp>, pos: egui::Pos2| {
         h.event(egui::Event::PointerMoved(pos));
         h.run_steps(1);
         h.event(egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -1654,7 +1654,7 @@ fn a_groups_read_only_button_is_not_chosen_by_a_click() {
         h.event(egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed: false, modifiers: Modifiers::NONE });
         h.run_steps(4);
     };
-    let value = |h: &Harness<'static, NovaPdfApp>| {
+    let value = |h: &Harness<'static, PdfCraftApp>| {
         let s = h.state();
         s.session.get(s.views[0].id).unwrap().form.iter().find(|f| f.name == "choice").map(|f| f.value.clone()).unwrap_or_default()
     };
@@ -1681,7 +1681,7 @@ trailer << /Root 1 0 R >>
 fn required_radio_buttons_get_a_round_red_border() {
     let _gpu = gpu();
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("radios.pdf", None, RADIOS.to_vec()).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -1728,7 +1728,7 @@ trailer << /Root 1 0 R >>
 fn round_check_boxes_get_a_round_highlight() {
     let _gpu = gpu();
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("checks.pdf", None, ROUND_CHECKS.to_vec()).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -1774,7 +1774,7 @@ fn field_highlighting_is_on_by_default_and_remembered() {
     h.run_steps(4);
     assert!(!h.state().views[1].highlight_fields, "the next document opens plain");
     let saved = h.state().persist();
-    let mut next = NovaPdfApp::new();
+    let mut next = PdfCraftApp::new();
     next.set_option("language", "en").unwrap();
     next.restore(&saved);
     next.open_bytes("form.pdf", None, FORM.to_vec()).expect("opens");
@@ -1792,7 +1792,7 @@ fn stored_field_highlight_choice_wins_over_the_default() {
         (r#"{"highlight_fields": "no"}"#, true),
         (r#"{"highlight_fields": null}"#, true),
     ] {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.restore(stored);
         app.open_bytes("form.pdf", None, FORM.to_vec()).expect("opens");
@@ -1842,7 +1842,7 @@ fn the_hand_tool_moves_the_page_with_the_pointer() {
     let start = h.state().views[0].viewport_rect().center();
     h.hover_at(start);
     h.run_steps(2);
-    let page = |h: &Harness<'static, NovaPdfApp>| rect(h, 0).expect("page 1 on screen").min;
+    let page = |h: &Harness<'static, PdfCraftApp>| rect(h, 0).expect("page 1 on screen").min;
     let grabbed = page(&h);
     let click_dist = h.ctx.options(|o| o.input_options.max_click_dist);
     let button = |pos, pressed| egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
@@ -1920,7 +1920,7 @@ trailer << /Root 1 0 R >>
     for ppp in [1.0, 2.0] {
         let bytes = pdf.clone();
         let mut h = Harness::builder().with_size(egui::vec2(1000.0, 800.0)).with_pixels_per_point(ppp).build_eframe(move |_cc| {
-            let mut app = NovaPdfApp::new();
+            let mut app = PdfCraftApp::new();
             app.set_option("language", "en").unwrap();
             app.open_bytes("lines.pdf", None, bytes.clone()).expect("opens");
             app.set_option("left", "closed").unwrap();
@@ -1935,7 +1935,7 @@ trailer << /Root 1 0 R >>
 
 /// Mean and largest difference between page 1 on screen and the page rendered directly at the
 /// view's exact device scale, over the lined area of `page_raster_maps_one_to_one_onto_screen_pixels`.
-fn compare_page_with_raster(h: &mut Harness<'static, NovaPdfApp>, pdf: &[u8], zoom: f32) -> (f64, u8) {
+fn compare_page_with_raster(h: &mut Harness<'static, PdfCraftApp>, pdf: &[u8], zoom: f32) -> (f64, u8) {
     crate::support::settle(h);
     let ppp = h.ctx.pixels_per_point();
     let r = rect(h, 0).expect("page 1");
@@ -1990,9 +1990,9 @@ trailer << /Root 1 0 R >>
     .into_bytes()
 }
 
-fn grid_harness(pdf: Vec<u8>, zoom: &str) -> Harness<'static, NovaPdfApp> {
+fn grid_harness(pdf: Vec<u8>, zoom: &str) -> Harness<'static, PdfCraftApp> {
     Harness::builder().with_size(egui::vec2(1000.0, 800.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.open_bytes("grid.pdf", None, pdf.clone()).expect("opens");
         app.set_option("left", "closed").unwrap();
         app.set_option("panel", "none").unwrap();
@@ -2002,7 +2002,7 @@ fn grid_harness(pdf: Vec<u8>, zoom: &str) -> Harness<'static, NovaPdfApp> {
 }
 
 /// Detail in the middle of the window: the summed difference between neighbouring pixels.
-fn centre_detail(h: &mut Harness<'static, NovaPdfApp>) -> u64 {
+fn centre_detail(h: &mut Harness<'static, PdfCraftApp>) -> u64 {
     let img = h.render().expect("renders");
     let (cx, cy) = (img.width() / 2, img.height() / 2);
     let mut sum = 0u64;
@@ -2055,7 +2055,7 @@ fn returning_to_a_visited_zoom_reuses_its_cached_tiles() {
 fn sidebar_collapse_and_resize_preserves_scroll_position() {
     use pdfcraft_ui_egui::canvas::Fit;
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("pages.pdf", None, PAGES.to_vec()).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -2130,7 +2130,7 @@ fn final_spread_at_scroll_end(heights: &[u32], cover: bool) -> (Vec<(usize, egui
     }
     pdf += "trailer << /Root 1 0 R >>\n%%EOF";
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_step_dt(1.0 / 60.0).build_eframe(move |_| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("unequal-spreads.pdf", None, pdf.as_bytes().to_vec()).unwrap();
         for (key, value) in [("left", "closed"), ("panel", "none"), ("layout", "two-up"), ("zoom", "200")] {
@@ -2204,7 +2204,7 @@ fn switching_modes_keeps_the_current_page_at_fixed_zoom() {
     pdf.push_str("trailer << /Root 1 0 R >>\n%%EOF");
     let other = pdf.clone().into_bytes();
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("pages.pdf", None, pdf.into_bytes()).unwrap();
         app.set_option("zoom", "100").unwrap();
@@ -2247,7 +2247,7 @@ fn switching_modes_keeps_the_current_page_at_fixed_zoom() {
 fn long_view_menu_fits_a_short_window() {
     use egui_kittest::kittest::Queryable;
     let mut h = Harness::builder().with_size(egui::vec2(1000.0, 400.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("pages.pdf", None, PAGES.to_vec()).unwrap();
         app
@@ -2271,7 +2271,7 @@ fn long_view_menu_fits_a_short_window() {
     assert_eq!(h.state().right, Some(pdfcraft_ui_egui::RightPanel::Bookmarks));
 }
 
-fn click_with(h: &mut Harness<'static, NovaPdfApp>, pos: egui::Pos2, modifiers: Modifiers) {
+fn click_with(h: &mut Harness<'static, PdfCraftApp>, pos: egui::Pos2, modifiers: Modifiers) {
     h.hover_at(pos);
     h.run_steps(1);
     for pressed in [true, false] {
@@ -2413,9 +2413,9 @@ fn full_screen_clicks_turn_pages_whatever_tool_was_on() {
 fn the_pages_panel_tools_act_on_the_selected_pages() {
     let mut h = harness(&[("panel", "pages")]);
     let id = h.state().views[0].id;
-    let rotations = |h: &Harness<'static, NovaPdfApp>| h.state().session.get(id).unwrap().info.pages.iter().map(|p| p.rotation).collect::<Vec<_>>();
+    let rotations = |h: &Harness<'static, PdfCraftApp>| h.state().session.get(id).unwrap().info.pages.iter().map(|p| p.rotation).collect::<Vec<_>>();
     // The panel's Page tools menu, on the right-hand side of the window.
-    let tool = |h: &mut Harness<'static, NovaPdfApp>, label: &str| {
+    let tool = |h: &mut Harness<'static, PdfCraftApp>, label: &str| {
         h.get_all_by_label("Page tools").find(|n| n.rect().left() > 1000.0).expect("Page tools in the Pages panel").click();
         h.run_steps(2);
         h.get_by_label(label).click();
@@ -2450,8 +2450,8 @@ fn the_pages_panel_tools_insert_from_a_file_and_extract() {
     std::fs::write(&more, PAGES).unwrap();
     let mut h = harness(&[("panel", "pages")]);
     let id = h.state().views[0].id;
-    let count = |h: &Harness<'static, NovaPdfApp>| h.state().session.get(id).unwrap().info.pages.len();
-    let tool = |h: &mut Harness<'static, NovaPdfApp>, label: &str| {
+    let count = |h: &Harness<'static, PdfCraftApp>| h.state().session.get(id).unwrap().info.pages.len();
+    let tool = |h: &mut Harness<'static, PdfCraftApp>, label: &str| {
         h.get_all_by_label("Page tools").find(|n| n.rect().left() > 1000.0).expect("Page tools in the Pages panel").click();
         h.run_steps(2);
         h.get_by_label(label).click();

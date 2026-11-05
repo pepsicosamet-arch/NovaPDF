@@ -6,7 +6,7 @@ use egui::{Align2, Color32, CornerRadius, Rect, Sense, Stroke, vec2};
 use pdfcraft_engine::catalog::{self, Availability, TOOL_CATEGORIES, ToolGroup};
 
 use crate::theme::{self, Tokens};
-use crate::{NovaPdfApp, icons, widgets};
+use crate::{PdfCraftApp, icons, widgets};
 
 const TILE: egui::Vec2 = vec2(148.0, 118.0);
 /// Item names a tile lists when the search found the tool by them.
@@ -42,7 +42,7 @@ fn matches(query: &str, group: &ToolGroup) -> Option<Vec<&'static str>> {
 
 /// Draw the view over the workspace: the title with Collapse, the search field, and each
 /// category's tiles that match the search. Choosing a tile opens that tool's panel.
-pub fn show(app: &mut NovaPdfApp, ui: &mut egui::Ui) {
+pub fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     // A dialog, prompt or the command palette over the view owns Escape.
     if !app.modal_open() && !app.palette_open && ui.input(|i| i.key_pressed(egui::Key::Escape)) {

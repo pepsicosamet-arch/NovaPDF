@@ -9,7 +9,7 @@ use egui::{Color32, Pos2, Rect, Stroke, pos2, vec2};
 use pdfcraft_engine::print::{self, Binding, BookletSubset, Content, Layout, Orientation, PAPERS, PageOrder, SizeMode, Subset, spool};
 
 use crate::theme::{self, Tokens};
-use crate::{NovaPdfApp, widgets};
+use crate::{PdfCraftApp, widgets};
 
 mod body;
 mod draft;
@@ -133,7 +133,7 @@ impl Drop for WakeOnExit {
     }
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     pub fn open_print(&mut self) {
         let Some((i, _)) = self.active_ids() else { return };
         let (printers, printers_loading) = match self.printer_source.clone() {
@@ -695,7 +695,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn the_progress_card_counts_the_sheets_of_a_print_job() {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         let (tx, rx) = std::sync::mpsc::channel();
         app.print_tasks.jobs.push(PrintJob { printer: "Office".into(), sheets: None, news: rx });

@@ -9,7 +9,7 @@ use egui::{Align, Layout};
 use pdfcraft_engine::actions::{Action, Step, builtin};
 
 use crate::theme::{self, Tokens};
-use crate::{NovaPdfApp, widgets};
+use crate::{PdfCraftApp, widgets};
 
 /// The Action Wizard's state.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -60,7 +60,7 @@ fn write_result(dir: &std::path::Path, name: &str, bytes: &[u8]) -> std::io::Res
     Err(Error::from(ErrorKind::AlreadyExists))
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// Built-in actions, then the user's.
     pub fn all_actions(&self) -> Vec<Action> {
         let mut v = builtin();
@@ -232,7 +232,7 @@ pub fn decode(v: &serde_json::Value) -> Vec<Action> {
 }
 
 /// The Action Wizard dialog. Returns `true` to close.
-pub(crate) fn body(ui: &mut egui::Ui, app: &mut NovaPdfApp, t: &Tokens) -> bool {
+pub(crate) fn body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> bool {
     if app.wizard.editing.is_some() {
         return edit_body(ui, app, t);
     }
@@ -305,7 +305,7 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut NovaPdfApp, t: &Tokens) -> bool 
 
 /// Draw the custom-action editor: name, description and ordered steps; Save stays disabled until the name is
 /// unique and non-empty and at least one step exists.
-fn edit_body(ui: &mut egui::Ui, app: &mut NovaPdfApp, t: &Tokens) -> bool {
+fn edit_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> bool {
     let Some((original, a)) = app.wizard.editing.as_mut() else { return false };
     ui.label(egui::RichText::new(if original.is_some() { tl!("Edit Action") } else { tl!("New Action") }).font(theme::semibold(18.0)));
     ui.add_space(8.0);

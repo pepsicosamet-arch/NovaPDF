@@ -476,7 +476,7 @@ mod pointer_tests {
         struct Probe {
             control: Option<Control>,
             client: Option<ControlClient>,
-            host: crate::NovaPdfApp,
+            host: crate::PdfCraftApp,
             primary: usize,
             secondary: usize,
             disabled: usize,
@@ -505,7 +505,7 @@ mod pointer_tests {
             let state = Probe {
                 control: None,
                 client: None,
-                host: crate::NovaPdfApp::new(),
+                host: crate::PdfCraftApp::new(),
                 primary: 0,
                 secondary: 0,
                 disabled: 0,

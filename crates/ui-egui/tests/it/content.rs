@@ -4,25 +4,25 @@
 use egui::{Pos2, pos2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::{NovaPdfApp, QuickTool};
+use pdfcraft_ui_egui::{PdfCraftApp, QuickTool};
 
 use crate::gpu;
 
-fn harness() -> Harness<'static, NovaPdfApp> {
+fn harness() -> Harness<'static, PdfCraftApp> {
     harness_with_step_dt(0.25)
 }
 
-fn harness_with_step_dt(step_dt: f32) -> Harness<'static, NovaPdfApp> {
+fn harness_with_step_dt(step_dt: f32) -> Harness<'static, PdfCraftApp> {
     harness_bytes_with_step_dt(include_bytes!("../data/form.pdf").to_vec(), step_dt)
 }
 
-fn harness_bytes(bytes: Vec<u8>) -> Harness<'static, NovaPdfApp> {
+fn harness_bytes(bytes: Vec<u8>) -> Harness<'static, PdfCraftApp> {
     harness_bytes_with_step_dt(bytes, 0.25)
 }
 
-fn harness_bytes_with_step_dt(bytes: Vec<u8>, step_dt: f32) -> Harness<'static, NovaPdfApp> {
+fn harness_bytes_with_step_dt(bytes: Vec<u8>, step_dt: f32) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_step_dt(step_dt).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("form.pdf", None, bytes.clone()).unwrap();
         app.set_option("zoom", "150").unwrap();
@@ -32,13 +32,13 @@ fn harness_bytes_with_step_dt(bytes: Vec<u8>, step_dt: f32) -> Harness<'static, 
     h
 }
 
-fn at(h: &Harness<'static, NovaPdfApp>, x: f32, y: f32) -> Pos2 {
+fn at(h: &Harness<'static, PdfCraftApp>, x: f32, y: f32) -> Pos2 {
     let r = h.state().views[0].page_screen_rect(0).expect("on screen");
     let k = r.width() / 300.0;
     r.min + egui::vec2(x * k, y * k)
 }
 
-fn click(h: &mut Harness<'static, NovaPdfApp>, p: Pos2) {
+fn click(h: &mut Harness<'static, PdfCraftApp>, p: Pos2) {
     h.hover_at(p);
     h.run_steps(1);
     h.drag_at(p);
@@ -47,13 +47,13 @@ fn click(h: &mut Harness<'static, NovaPdfApp>, p: Pos2) {
     h.run_steps(3);
 }
 
-fn added(h: &Harness<'static, NovaPdfApp>) -> Vec<pdfcraft_engine::Added> {
+fn added(h: &Harness<'static, PdfCraftApp>) -> Vec<pdfcraft_engine::Added> {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().added().to_vec()
 }
 
 /// A click whose press and release arrive in the same frame, as a quick real mouse click does.
-fn quick_click(h: &mut Harness<'static, NovaPdfApp>, p: Pos2) {
+fn quick_click(h: &mut Harness<'static, PdfCraftApp>, p: Pos2) {
     h.hover_at(p);
     h.run_steps(1);
     for pressed in [true, false] {
@@ -62,7 +62,7 @@ fn quick_click(h: &mut Harness<'static, NovaPdfApp>, p: Pos2) {
     h.run_steps(3);
 }
 
-fn texts(h: &Harness<'static, NovaPdfApp>) -> Vec<String> {
+fn texts(h: &Harness<'static, PdfCraftApp>) -> Vec<String> {
     added(h)
         .into_iter()
         .filter_map(|a| match a.content {
@@ -275,7 +275,7 @@ fn a_picture_on_the_clipboard_is_pasted_onto_the_page() {
     // Three frames between modifier releases represent a short real key gesture.
     let mut h = harness_with_step_dt(1.0 / 60.0);
     let v = |pressed, modifiers| egui::Event::Key { key: egui::Key::V, physical_key: None, pressed, repeat: false, modifiers };
-    let images = |h: &Harness<'static, NovaPdfApp>| added(h).iter().filter(|a| matches!(a.content, pdfcraft_engine::AddedContent::Image(_))).count();
+    let images = |h: &Harness<'static, PdfCraftApp>| added(h).iter().filter(|a| matches!(a.content, pdfcraft_engine::AddedContent::Image(_))).count();
     // Text on the clipboard: egui gets a Paste event instead of the press; nothing lands on the page.
     h.state_mut().clipboard_override = Some(Clip::Text("hello".into()));
     h.event(egui::Event::Paste("hello".into()));
@@ -458,7 +458,7 @@ fn finished_text_over_form_field_keeps_selection_and_drag_ownership() {
     assert_eq!(h.state().views[0].forms.focus.as_ref().map(|f| f.name.as_str()), Some("city"));
 }
 
-fn text_over_city() -> Harness<'static, NovaPdfApp> {
+fn text_over_city() -> Harness<'static, PdfCraftApp> {
     let mut h = harness_with_step_dt(1.0 / 60.0);
     assert!(h.state_mut().execute("edit.text"));
     h.run_steps(2);
@@ -528,7 +528,7 @@ fn closing_edit_panel_leaves_form_filling_available() {
 }
 
 /// The screen rectangle of an added item's display-space box (y up, from the page's bottom).
-fn item_on_screen(h: &Harness<'static, NovaPdfApp>, r: [f64; 4]) -> egui::Rect {
+fn item_on_screen(h: &Harness<'static, PdfCraftApp>, r: [f64; 4]) -> egui::Rect {
     let s = h.state();
     let ph = s.session.get(s.views[0].id).unwrap().info.pages[0].height;
     let page = s.views[0].page_screen_rect(0).expect("on screen");
@@ -552,14 +552,14 @@ fn probe(r: egui::Rect) -> egui::Rect {
 }
 
 /// Ink in the probes of the text's first and dragged places.
-fn ink_at(h: &mut Harness<'static, NovaPdfApp>, from: egui::Rect, to: egui::Rect) -> (usize, usize) {
+fn ink_at(h: &mut Harness<'static, PdfCraftApp>, from: egui::Rect, to: egui::Rect) -> (usize, usize) {
     let pixels = h.render().unwrap();
     (ink(&pixels, probe(from)), ink(&pixels, probe(to)))
 }
 
 /// Types text, finishes it, and drags it up without releasing, until the drag preview shows.
 /// Returns the text's box, its screen rectangles before and after, and the pointer.
-fn drag_added_text(h: &mut Harness<'static, NovaPdfApp>) -> ([f64; 4], egui::Rect, egui::Rect, Pos2) {
+fn drag_added_text(h: &mut Harness<'static, PdfCraftApp>) -> ([f64; 4], egui::Rect, egui::Rect, Pos2) {
     assert!(h.state_mut().execute("edit.text"));
     h.run_steps(2);
     let p = at(h, 40.0, 300.0);
@@ -699,7 +699,7 @@ fn format_text_rows_line_up_and_fit_the_panel() {
     assert!(h.state_mut().execute("edit.text"));
     h.run_steps(3);
     h.get_by_label("FORMAT TEXT");
-    let combo = |h: &Harness<'static, NovaPdfApp>, value: &str| {
+    let combo = |h: &Harness<'static, PdfCraftApp>, value: &str| {
         h.query_all_by_role(Role::ComboBox).find(|n| n.value().as_deref() == Some(value)).map(|n| n.rect()).expect(value)
     };
     let (font, size) = (combo(&h, "Helvetica"), h.get_by_label("Font size:").rect());
@@ -864,7 +864,7 @@ fn format_text_sets_character_spacing_for_added_text() {
     let mut h = harness();
     assert!(h.state_mut().execute("edit.text"));
     h.run_steps(3);
-    let disabled = |h: &Harness<'static, NovaPdfApp>, label: &str| h.get_by_role_and_label(Role::SpinButton, label).accesskit_node().is_disabled();
+    let disabled = |h: &Harness<'static, PdfCraftApp>, label: &str| h.get_by_role_and_label(Role::SpinButton, label).accesskit_node().is_disabled();
     assert!(disabled(&h, "Horizontal scale"), "added text has no scale yet");
     assert!(!disabled(&h, "Character spacing"), "added text takes character spacing");
     h.get_by_role_and_label(Role::SpinButton, "Character spacing").click();
@@ -904,17 +904,17 @@ fn the_text_editor_aligns_a_narrow_box_whose_lines_share_an_alignment() {
 }
 
 /// Where a mode bar tab is, by its label.
-fn mode_tab(h: &Harness<'static, NovaPdfApp>, label: &str) -> egui::Rect {
+fn mode_tab(h: &Harness<'static, PdfCraftApp>, label: &str) -> egui::Rect {
     h.get_all_by_role_and_label(egui::accesskit::Role::Button, label).map(|n| n.rect()).find(|r| r.bottom() < 120.0).expect("a mode tab")
 }
 
 /// Scroll the page until `what` (on screen) lies across the mode bar, then the cursor over each
 /// tab it lies under: with the All tools panel closed, every tab: All tools, Edit, Convert and E-Sign.
 fn mode_tab_cursors(
-    h: &mut Harness<'static, NovaPdfApp>,
-    what: impl Fn(&Harness<'static, NovaPdfApp>) -> egui::Rect,
+    h: &mut Harness<'static, PdfCraftApp>,
+    what: impl Fn(&Harness<'static, PdfCraftApp>) -> egui::Rect,
 ) -> [(&'static str, egui::CursorIcon); 4] {
-    let page = |h: &Harness<'static, NovaPdfApp>| h.state().views[0].page_screen_rect(0).expect("on screen");
+    let page = |h: &Harness<'static, PdfCraftApp>| h.state().views[0].page_screen_rect(0).expect("on screen");
     let y = what(h).center().y - page(h).top();
     let tabs = mode_tab(h, "Convert").center().y;
     h.state_mut().views[0].goto = Some((0, 0.0));
@@ -968,7 +968,7 @@ fn mode_tabs_keep_the_hand_over_added_text_scrolled_under_them() {
     let kept = added(&h)[0].content.rect();
     assert_eq!(mode_tab_cursors(&mut h, |h| item_on_screen(h, kept)), HAND_ON_EVERY_TAB, "added text under the tabs");
     // The second box, still being typed.
-    let draft = |h: &Harness<'static, NovaPdfApp>| item_on_screen(h, h.state().views[0].content.draft.as_ref().expect("the open box").rect);
+    let draft = |h: &Harness<'static, PdfCraftApp>| item_on_screen(h, h.state().views[0].content.draft.as_ref().expect("the open box").rect);
     assert_eq!(mode_tab_cursors(&mut h, draft), HAND_ON_EVERY_TAB, "the open box under the tabs");
     let convert = mode_tab(&h, "Convert").center();
     click(&mut h, convert);
@@ -1059,7 +1059,7 @@ fn aligning_a_selected_line_of_added_text_aligns_only_that_line() {
     click(&mut h, button);
     let item = h.get_by_label("Align right").rect().center();
     click(&mut h, item);
-    let aligns = |h: &Harness<'static, NovaPdfApp>| match &added(h)[0].content {
+    let aligns = |h: &Harness<'static, PdfCraftApp>| match &added(h)[0].content {
         pdfcraft_engine::AddedContent::Text(t) => (t.align, t.aligns.clone()),
         _ => panic!(),
     };
@@ -1130,7 +1130,7 @@ Line two"
     h.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::End);
     h.key_press_modifiers(egui::Modifiers::SHIFT, egui::Key::Home);
     h.run_steps(2);
-    let align_by_focus = |h: &mut Harness<'static, NovaPdfApp>, choice: &str| {
+    let align_by_focus = |h: &mut Harness<'static, PdfCraftApp>, choice: &str| {
         for label in ["Alignment", choice] {
             h.get_by_label(label).focus();
             h.run_steps(2);
@@ -1138,7 +1138,7 @@ Line two"
             h.run_steps(3);
         }
     };
-    let aligns = |h: &Harness<'static, NovaPdfApp>| match &added(h)[0].content {
+    let aligns = |h: &Harness<'static, PdfCraftApp>| match &added(h)[0].content {
         pdfcraft_engine::AddedContent::Text(t) => (t.align, t.aligns.clone()),
         _ => panic!(),
     };
@@ -1292,7 +1292,7 @@ fn undo_brings_a_deleted_line_of_added_text_back_with_its_alignment() {
     // On the first line, at the top of the box.
     let point = at(&h, 45.0, 205.0);
     click(&mut h, point);
-    let draft = |h: &Harness<'static, NovaPdfApp>| h.state().views[0].content.draft.clone().expect("the box is open");
+    let draft = |h: &Harness<'static, PdfCraftApp>| h.state().views[0].content.draft.clone().expect("the box is open");
     assert_eq!((draft(&h).text, draft(&h).style.aligns), ("A\nB\nC".to_string(), aligns.clone()), "the editor opened on the text");
     // Select the second line with its line break, and delete it.
     h.run_steps(2);
@@ -1324,7 +1324,7 @@ fn undo_after_a_round_trip_through_another_tab_takes_back_added_text_typing() {
     h.state_mut().open_bytes("copy.pdf", None, include_bytes!("../data/form.pdf").to_vec()).unwrap();
     h.run_steps(4);
     let text = pdfcraft_engine::AddedText { rect: [40.0, 195.0, 240.0, 210.0], text: "Reviewed".into(), ..Default::default() };
-    let open_in = |h: &mut Harness<'static, NovaPdfApp>, tab: usize| {
+    let open_in = |h: &mut Harness<'static, PdfCraftApp>, tab: usize| {
         h.state_mut().active = Some(tab);
         h.run_steps(2);
         assert!(h.state_mut().execute("edit.text"));
@@ -1345,7 +1345,7 @@ fn undo_after_a_round_trip_through_another_tab_takes_back_added_text_typing() {
     open_in(&mut h, 1);
     h.state_mut().active = Some(0);
     h.run_steps(3);
-    let draft = |h: &Harness<'static, NovaPdfApp>| h.state().views[0].content.draft.as_ref().map(|d| d.text.clone());
+    let draft = |h: &Harness<'static, PdfCraftApp>| h.state().views[0].content.draft.as_ref().map(|d| d.text.clone());
     assert_eq!(draft(&h).as_deref(), Some("Reviewed twice"), "A's box is still open with the typing");
     assert!(h.state_mut().execute("edit.undo"));
     h.run_steps(3);
@@ -1366,7 +1366,7 @@ fn undo_in_the_frame_of_the_switch_back_takes_back_added_text_typing() {
         let text = pdfcraft_engine::AddedText { rect, text: text.into(), ..Default::default() };
         assert!(h.state_mut().apply_edit(pdfcraft_engine::Edit::AddText { page: 0, text }));
     }
-    let open_in = |h: &mut Harness<'static, NovaPdfApp>, tab: usize| {
+    let open_in = |h: &mut Harness<'static, PdfCraftApp>, tab: usize| {
         h.state_mut().active = Some(tab);
         h.run_steps(2);
         assert!(h.state_mut().execute("edit.text"));
@@ -1462,7 +1462,7 @@ fn typing_in_one_tab_never_reaches_another_tabs_added_text() {
     h.state_mut().open_bytes("copy.pdf", None, include_bytes!("../data/form.pdf").to_vec()).unwrap();
     h.run_steps(4);
     let text = pdfcraft_engine::AddedText { rect: [40.0, 195.0, 240.0, 210.0], text: "Reviewed".into(), ..Default::default() };
-    let open_in = |h: &mut Harness<'static, NovaPdfApp>, tab: usize| {
+    let open_in = |h: &mut Harness<'static, PdfCraftApp>, tab: usize| {
         h.state_mut().active = Some(tab);
         h.run_steps(2);
         assert!(h.state_mut().execute("edit.text"));

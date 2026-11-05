@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 use crate::canvas::PageToolContext;
 use crate::theme::{self, Tokens};
-use crate::{LeftPanel, NovaPdfApp, icons, widgets};
+use crate::{LeftPanel, PdfCraftApp, icons, widgets};
 use egui::{Align2, Color32, CornerRadius, Pos2, Rect, Sense, Shape, Stroke, Vec2, pos2, vec2};
 use pdfcraft_cos::ObjRef;
 use pdfcraft_engine::form_scripts::{CalcOp, Calculate, format_value};
@@ -626,7 +626,7 @@ fn explained(issues: &[CalculationIssue]) -> String {
 }
 
 /// The Calculation order page; Back returns to Prepare a form.
-pub(crate) fn panel(app: &mut NovaPdfApp, ui: &mut egui::Ui, t: &Tokens) {
+pub(crate) fn panel(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
     let (back, close) = crate::panels::panel_header(ui, t, "Calculation order", Some(("chevron-left", tl!("Back to Prepare a form"))));
     if back {
         app.left = LeftPanel::Tool("form");

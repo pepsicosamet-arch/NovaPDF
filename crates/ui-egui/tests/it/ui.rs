@@ -4,7 +4,7 @@ use crate::support;
 
 use egui_kittest::Harness;
 use egui_kittest::kittest::{By, NodeT, Queryable};
-use pdfcraft_ui_egui::NovaPdfApp;
+use pdfcraft_ui_egui::PdfCraftApp;
 
 /// A tiny PDF with two pages, two bookmarks and one sticky note.
 const FIXTURE: &[u8] = b"%PDF-1.7
@@ -19,9 +19,9 @@ const FIXTURE: &[u8] = b"%PDF-1.7
 trailer << /Root 1 0 R >>
 %%EOF";
 
-fn harness(setup: impl FnOnce(&mut NovaPdfApp) + 'static) -> Harness<'static, NovaPdfApp> {
+fn harness(setup: impl FnOnce(&mut PdfCraftApp) + 'static) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         setup(&mut app);
         app
@@ -51,7 +51,7 @@ fn tools_panel_side_preference_moves_and_persists() {
     h.run_steps(3);
     assert!(h.state().side_panels.tools_on_right());
     let saved = h.state().persist();
-    let mut restored = NovaPdfApp::new();
+    let mut restored = PdfCraftApp::new();
     restored.restore(&saved);
     assert!(restored.side_panels.tools_on_right());
     h.get_by_label("Left").click();
@@ -61,7 +61,7 @@ fn tools_panel_side_preference_moves_and_persists() {
 
 /// Every piece of text painted on the last frame: its whole text, whether it was cut with "…",
 /// and where it was drawn.
-fn painted_text(h: &Harness<'static, NovaPdfApp>) -> Vec<(String, bool, egui::Rect)> {
+fn painted_text(h: &Harness<'static, PdfCraftApp>) -> Vec<(String, bool, egui::Rect)> {
     h.output()
         .shapes
         .iter()
@@ -93,7 +93,7 @@ fn long_recent_names_and_paths_are_cut_before_the_page_count() {
 fn home_removes_one_recent_file_or_clears_them_all() {
     // Tall enough that the Recent list is on screen without scrolling.
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 1600.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         for name in ["first.pdf", "second.pdf", "third.pdf"] {
             app.recent.push(pdfcraft_ui_egui::RecentFile { name: name.into(), path: format!("/nowhere/{name}"), pages: 1, size: 0 });
@@ -192,7 +192,7 @@ fn escape_in_the_command_palette_over_the_expanded_all_tools_leaves_the_view_ope
 
 #[test]
 fn another_workspace_from_the_mode_option_puts_the_expanded_all_tools_away() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.set_option("tools", "full").unwrap();
     app.set_option("mode", "all").unwrap();
     assert!(app.all_tools_full, "All tools itself keeps the view");
@@ -205,12 +205,12 @@ fn another_workspace_from_the_mode_option_puts_the_expanded_all_tools_away() {
 fn opening_a_document_puts_the_expanded_all_tools_away() {
     use pdfcraft_ui_egui::Mode;
     // All tools as the default workspace: no workspace change, but the document must show.
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.set_option("tools", "full").unwrap();
     app.open_bytes("fixture.pdf", None, FIXTURE.to_vec()).expect("fixture opens");
     assert!(!app.all_tools_full, "the document shows, not the catalogue over it");
     // Read as the default workspace: coming back to All tools later shows the sidebar.
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.set_option("default-mode", "read").unwrap();
     app.set_option("tools", "full").unwrap();
     app.open_bytes("fixture.pdf", None, FIXTURE.to_vec()).expect("fixture opens");
@@ -646,7 +646,7 @@ fn overflowing_tabs_can_be_reached_by_scrolling() {
 }
 
 /// Whether a node labelled `label` is there and enabled (`None`: not there).
-fn enabled(h: &Harness<'static, NovaPdfApp>, label: &str) -> Option<bool> {
+fn enabled(h: &Harness<'static, PdfCraftApp>, label: &str) -> Option<bool> {
     h.query_by_label(label)?;
     Some(h.query_by(|n| n.label().as_deref() == Some(label) && n.is_disabled()).is_none())
 }
@@ -722,7 +722,7 @@ fn the_integrated_title_bar_is_the_traffic_light_band() {
 fn narrow_tab_strips_accept_vertical_wheel_scrolling() {
     for width in [600.0, 900.0] {
         let mut h = Harness::builder().with_size(egui::vec2(width, 700.0)).build_eframe(|_cc| {
-            let mut app = NovaPdfApp::new();
+            let mut app = PdfCraftApp::new();
             app.set_option("language", "en").unwrap();
             for i in 0..12 {
                 app.open_bytes(&format!("narrow-{i:02}.pdf"), None, FIXTURE.to_vec()).unwrap();
@@ -763,7 +763,7 @@ fn narrow_tab_strips_accept_vertical_wheel_scrolling() {
 
 #[test]
 fn garbage_input_is_rejected_without_panicking() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.set_option("language", "en").unwrap();
     assert!(app.open_bytes("junk.pdf", None, b"this is not a pdf".to_vec()).is_err());
     assert!(app.open_bytes("empty.pdf", None, Vec::new()).is_err());
@@ -852,11 +852,11 @@ fn drag_selects_text_and_copy_returns_it() {
 
 #[test]
 fn persistence_round_trips_and_tolerates_garbage() {
-    let mut a = NovaPdfApp::new();
+    let mut a = PdfCraftApp::new();
     a.set_option("language", "en").unwrap();
     a.set_option("theme", "dark").unwrap();
     let json = a.persist();
-    let mut b = NovaPdfApp::new();
+    let mut b = PdfCraftApp::new();
     b.set_option("language", "en").unwrap();
     b.restore(&json);
     assert_eq!(b.theme, pdfcraft_ui_egui::theme::ThemeKind::Dark);
@@ -870,21 +870,21 @@ fn persistence_round_trips_and_tolerates_garbage() {
 #[test]
 fn a_saved_no_fill_clears_a_comment_tool_default_fill() {
     use pdfcraft_ui_egui::comments::CommentTool;
-    let filled = |a: &mut NovaPdfApp| {
+    let filled = |a: &mut PdfCraftApp| {
         let mut s = a.comment_prefs.style(CommentTool::Rectangle);
         s.fill = Some([0.2, 0.4, 0.6]);
         a.comment_prefs.set_style(CommentTool::Rectangle, s);
     };
-    let mut a = NovaPdfApp::new();
+    let mut a = PdfCraftApp::new();
     filled(&mut a);
     a.restore(r#"{"comment_styles":[{"tool":"comment.square","fill":null}]}"#);
     assert_eq!(a.comment_prefs.style(CommentTool::Rectangle).fill, None, "null clears the fill");
-    let mut b = NovaPdfApp::new();
+    let mut b = PdfCraftApp::new();
     filled(&mut b);
     b.restore(r#"{"comment_styles":[{"tool":"comment.square","color":[0,0,1]},{"tool":"comment.square","fill":"red"}]}"#);
     assert_eq!(b.comment_prefs.style(CommentTool::Rectangle).fill, Some([0.2, 0.4, 0.6]), "missing or malformed keeps it");
     // A round trip keeps a cleared fill cleared.
-    let mut c = NovaPdfApp::new();
+    let mut c = PdfCraftApp::new();
     c.restore(&a.persist());
     assert_eq!(c.comment_prefs.style(CommentTool::Rectangle).fill, None);
 }
@@ -894,7 +894,7 @@ fn a_saved_no_fill_clears_a_comment_tool_default_fill() {
 #[test]
 fn comment_style_settings_clamp_and_refuse_hostile_values() {
     use pdfcraft_ui_egui::comments::CommentTool;
-    let mut a = NovaPdfApp::new();
+    let mut a = PdfCraftApp::new();
     a.restore(
         r#"{"comment_styles":[
             {"tool":"comment.highlight","color":[2,-1,0.5],"opacity":99,"width":-4},
@@ -999,7 +999,7 @@ impl egui::DroppedFile for Dropped {
 #[test]
 fn dropping_a_pdf_on_the_window_opens_it() {
     let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app
     });
@@ -1024,7 +1024,7 @@ fn dropping_an_open_pdf_again_focuses_its_tab() {
     let path = dir.join("dropped.pdf");
     std::fs::write(&path, FIXTURE).unwrap();
     let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app
     });
@@ -1047,11 +1047,11 @@ fn a_file_dropped_on_the_page_grid_is_read_from_disk_and_inserted() {
     let dir = std::env::temp_dir().join(format!("pdfcraft-grid-drop-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("dropped.pdf");
-    let setup = NovaPdfApp::new();
+    let setup = PdfCraftApp::new();
     let pdf = setup.session.create_from_text("dropped", "from disk").unwrap();
     std::fs::write(&path, pdf.as_slice()).unwrap();
     let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         let grid = app.session.create_from_text("grid", "one page").unwrap();
         app.open_bytes("grid.pdf", None, grid.to_vec()).unwrap();
@@ -1059,7 +1059,7 @@ fn a_file_dropped_on_the_page_grid_is_read_from_disk_and_inserted() {
         app
     });
     h.run_steps(3);
-    let pages = |h: &egui_kittest::Harness<'_, NovaPdfApp>| {
+    let pages = |h: &egui_kittest::Harness<'_, PdfCraftApp>| {
         let app = h.state();
         app.session.get(app.views[0].id).unwrap().info.pages.len()
     };
@@ -1080,7 +1080,7 @@ fn a_file_dropped_on_the_page_grid_is_read_from_disk_and_inserted() {
 #[test]
 fn pdfs_dropped_on_the_combine_tab_join_its_list() {
     let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app
     });
@@ -1111,7 +1111,7 @@ fn a_folder_dropped_on_the_combine_tab_adds_its_pdfs() {
     std::fs::write(dir.join("one.pdf"), FIXTURE).unwrap();
     std::fs::write(dir.join("inner").join("two.pdf"), FIXTURE).unwrap();
     let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app
     });
@@ -1162,11 +1162,11 @@ fn files_and_quit_from_the_operating_system() {
 fn default_workspace_mode_persists_and_tolerates_invalid_settings() {
     use pdfcraft_ui_egui::Mode;
     for mode in [Mode::AllTools, Mode::Read, Mode::Edit, Mode::Convert, Mode::Sign] {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.default_mode = mode;
         app.set_option("mode", "sign").unwrap();
-        let mut restored = NovaPdfApp::new();
+        let mut restored = PdfCraftApp::new();
         restored.set_option("language", "en").unwrap();
         restored.restore(&app.persist());
         assert_eq!(restored.default_mode, mode);
@@ -1174,7 +1174,7 @@ fn default_workspace_mode_persists_and_tolerates_invalid_settings() {
         assert_eq!(restored.mode, mode, "session override must not be persisted");
     }
     for json in ["{}", "{not json", r#"{"default_mode": null}"#, r#"{"default_mode": 5}"#, r#"{"default_mode": "unknown"}"#] {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.restore(json);
         assert_eq!(app.default_mode, Mode::AllTools);
@@ -1186,7 +1186,7 @@ fn default_workspace_mode_persists_and_tolerates_invalid_settings() {
 #[test]
 fn newly_opened_pdfs_use_the_default_workspace() {
     use pdfcraft_ui_egui::{LeftPanel, Mode};
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.set_option("language", "en").unwrap();
     app.restore(r#"{"default_mode": "edit"}"#);
     app.open_bytes("first.pdf", None, FIXTURE.to_vec()).unwrap();
@@ -1210,7 +1210,7 @@ fn explicit_mode_overrides_default_before_and_after_open() {
     use pdfcraft_ui_egui::Mode;
     for before in [false, true] {
         for (value, mode) in [("all", Mode::AllTools), ("read", Mode::Read), ("edit", Mode::Edit), ("convert", Mode::Convert), ("sign", Mode::Sign)] {
-            let mut app = NovaPdfApp::new();
+            let mut app = PdfCraftApp::new();
             app.set_option("language", "en").unwrap();
             app.default_mode = Mode::Read;
             if before {
@@ -1255,7 +1255,7 @@ fn preferences_selects_default_workspace_for_next_open() {
 fn use_system_title_bar_swaps_the_header_bar_for_the_window_frame() {
     use egui::accesskit::Role;
     use pdfcraft_ui_egui::window_controls::Layout;
-    fn decorations(h: &Harness<'static, NovaPdfApp>) -> Option<bool> {
+    fn decorations(h: &Harness<'static, PdfCraftApp>) -> Option<bool> {
         h.output().viewport_output.values().flat_map(|v| v.commands.iter()).find_map(|c| match c {
             egui::ViewportCommand::Decorations(on) => Some(*on),
             _ => None,
@@ -1280,7 +1280,7 @@ fn use_system_title_bar_swaps_the_header_bar_for_the_window_frame() {
     assert!(h.query_by_label("Minimize").is_none(), "and the tab strip loses its buttons");
     let saved = h.state().persist();
     assert!(saved.contains(r#""system_title_bar":true"#), "{saved}");
-    let mut restored = NovaPdfApp::new();
+    let mut restored = PdfCraftApp::new();
     restored.restore(&saved);
     assert!(restored.system_title_bar);
     restored.set_option("system-title-bar", "false").unwrap();
@@ -1317,10 +1317,10 @@ fn preferences_choose_animation_effects_and_the_choice_is_saved() {
     }
     let saved = h.state().persist();
     assert!(saved.contains(r#""animation_effects":"off""#), "{saved}");
-    let mut restored = NovaPdfApp::new();
+    let mut restored = PdfCraftApp::new();
     restored.restore(&saved);
     assert_eq!(restored.animation_effects, AnimationEffects::Off);
-    let mut fresh = NovaPdfApp::new();
+    let mut fresh = PdfCraftApp::new();
     fresh.restore(&saved.replace(r#""animation_effects":"off""#, r#""animation_effects":"sideways""#));
     assert_eq!(fresh.animation_effects, AnimationEffects::System);
     // The control channel and the command line take the same three names.
@@ -1333,7 +1333,7 @@ fn preferences_choose_animation_effects_and_the_choice_is_saved() {
 #[test]
 fn explicit_mode_preserves_independent_tool_and_panel_options() {
     use pdfcraft_ui_egui::LeftPanel;
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.set_option("language", "en").unwrap();
     app.set_option("tool", "export").unwrap();
     app.set_option("left", "closed").unwrap();
@@ -1349,7 +1349,7 @@ fn explicit_mode_preserves_independent_tool_and_panel_options() {
 fn opening_a_pdf_keeps_a_closed_left_panel_and_the_chosen_tool() {
     use pdfcraft_ui_egui::{LeftPanel, Mode};
     // `--left closed` without `--mode`, default workspace Edit: the panel stays closed.
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.set_option("language", "en").unwrap();
     app.default_mode = Mode::Edit;
     app.set_option("left", "closed").unwrap();
@@ -1357,7 +1357,7 @@ fn opening_a_pdf_keeps_a_closed_left_panel_and_the_chosen_tool() {
     assert_eq!(app.mode, Mode::Edit);
     assert!(!app.left_open);
     // Default All Tools: opening another PDF leaves the tool panel the user picked.
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.set_option("language", "en").unwrap();
     app.set_option("tool", "export").unwrap();
     app.open_bytes("first.pdf", None, FIXTURE.to_vec()).unwrap();
@@ -1366,7 +1366,7 @@ fn opening_a_pdf_keeps_a_closed_left_panel_and_the_chosen_tool() {
     assert_eq!(app.left, LeftPanel::Tool("export"));
 }
 
-fn three_tab_harness() -> Harness<'static, NovaPdfApp> {
+fn three_tab_harness() -> Harness<'static, PdfCraftApp> {
     harness(|app| {
         for name in ["first.pdf", "middle.pdf", "last.pdf"] {
             app.open_bytes(name, None, FIXTURE.to_vec()).unwrap();
@@ -1374,7 +1374,7 @@ fn three_tab_harness() -> Harness<'static, NovaPdfApp> {
     })
 }
 
-fn close_named_tab(h: &mut Harness<'static, NovaPdfApp>, name: &str) {
+fn close_named_tab(h: &mut Harness<'static, PdfCraftApp>, name: &str) {
     // The close button has no separate accessible label. Its centre is defined by
     // chrome::tab relative to the actual accessible tab rectangle, not a viewport guess.
     let pos = h.get_by_role_and_label(egui::accesskit::Role::Tab, name).rect().right_center() - egui::vec2(16.0, 0.0);
@@ -1552,7 +1552,7 @@ fn combine_tab_uses_tab_interaction_without_changing_close_or_document_state() {
 }
 
 /// Presses the named tab, drags it to `to` in a few steps and, unless `release` is false, lets go.
-fn drag_named_tab(h: &mut Harness<'static, NovaPdfApp>, name: &str, to: egui::Pos2, release: bool) {
+fn drag_named_tab(h: &mut Harness<'static, PdfCraftApp>, name: &str, to: egui::Pos2, release: bool) {
     let from = h.get_by_role_and_label(egui::accesskit::Role::Tab, name).rect().center();
     h.event(egui::Event::PointerMoved(from));
     h.event(egui::Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: egui::Modifiers::NONE });
@@ -1572,7 +1572,7 @@ fn dragging_a_tab_moves_it_and_keeps_the_same_document_active() {
     use egui::accesskit::Role;
     let mut h = three_tab_harness();
     let ids: Vec<_> = h.state().views.iter().map(|view| view.id).collect();
-    let tab = |h: &Harness<'static, NovaPdfApp>, name: &str| h.get_by_role_and_label(Role::Tab, name).rect();
+    let tab = |h: &Harness<'static, PdfCraftApp>, name: &str| h.get_by_role_and_label(Role::Tab, name).rect();
     // first.pdf past the end; last.pdf, the active one, keeps the focus at its new place.
     let to = tab(&h, "last.pdf").right_center() + egui::vec2(20.0, 0.0);
     drag_named_tab(&mut h, "first.pdf", to, true);
@@ -1608,7 +1608,7 @@ fn the_drop_line_shows_in_front_of_the_first_tab() {
     let mut h = three_tab_harness();
     let first = h.get_by_role_and_label(Role::Tab, "first.pdf").rect();
     // Pixels in the strip just left of the first tab that are strongly blue (the accent line).
-    let blue_left_of = |h: &mut Harness<'static, NovaPdfApp>, rect: egui::Rect| {
+    let blue_left_of = |h: &mut Harness<'static, PdfCraftApp>, rect: egui::Rect| {
         let image = h.render().unwrap();
         let scale = image.width() as f32 / h.ctx.content_rect().width();
         let x0 = ((rect.left() - 3.0) * scale).max(0.0) as u32;
@@ -1728,7 +1728,7 @@ fn short_window_rail_buttons_scroll_clear_of_page_navigation() {
     for side in [ToolsSide::Right, ToolsSide::Left] {
         let (width, height) = (1000.0, 560.0);
         let mut h = Harness::builder().with_size(egui::vec2(width, height)).build_eframe(move |_cc| {
-            let mut app = NovaPdfApp::new();
+            let mut app = PdfCraftApp::new();
             app.set_option("language", "en").unwrap();
             app.side_panels.rail_side = side;
             app.open_bytes("short.pdf", None, FIXTURE.to_vec()).unwrap();
@@ -1739,7 +1739,7 @@ fn short_window_rail_buttons_scroll_clear_of_page_navigation() {
             ToolsSide::Left => r.right() <= 48.0,
             ToolsSide::Right => r.left() >= width - 48.0,
         };
-        let rail = |h: &Harness<'static, NovaPdfApp>, label: &str| {
+        let rail = |h: &Harness<'static, PdfCraftApp>, label: &str| {
             h.query_all_by_label(label).map(|n| n.rect()).find(|r| in_rail(*r)).unwrap_or_else(|| panic!("{label} in the rail"))
         };
         let page = h.get(By::new().role(egui::accesskit::Role::TextInput).value("1")).rect();
@@ -1842,7 +1842,7 @@ fn a_file_opened_again_shows_its_last_view() {
     let v = &h.state().views[0];
     assert_eq!((v.current, v.fit, v.layout, v.continuous, v.cover), (0, Fit::Width, PageLayout::Single, true, false));
     // Garbage in the settings is ignored, a usable entry among it is kept.
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.restore(&format!(
         r#"{{"restore_last_view": "yes", "last_views": [5, {{"path": ""}}, {{"path": "{}", "page": -1, "zoom": "huge", "display": "single"}}, {{"path": "{}", "page": 1, "zoom": "fit-page", "display": "two-up"}}]}}"#,
         path.replace('\\', "/"),

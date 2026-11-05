@@ -20,7 +20,7 @@ use std::sync::Arc;
 use egui::{Align2, Color32, CornerRadius, Rect, Sense, Stroke, TextureHandle, Vec2, pos2, vec2};
 use pdfcraft_render::{RenderConfig, RenderPool, RenderRequest, Retiring};
 
-use crate::NovaPdfApp;
+use crate::PdfCraftApp;
 use crate::combine_ui::{CombineFile, ERROR, Lock, RowAction, WARNING};
 use crate::icons;
 use crate::theme::{self, Tokens};
@@ -159,7 +159,7 @@ pub(crate) fn pages_shown(cache: &mut HashMap<u64, PageList>, f: &CombineFile) -
 }
 
 /// The grid's places, in order: each file's card, or its pages when it is expanded.
-fn layout(app: &mut NovaPdfApp) -> Vec<Cell> {
+fn layout(app: &mut PdfCraftApp) -> Vec<Cell> {
     let tab = &mut app.combine_tab;
     let mut cells = Vec::with_capacity(app.combine_draft.len());
     for (file, f) in app.combine_draft.iter().enumerate() {
@@ -192,7 +192,7 @@ fn file_gap(cells: &[Cell], at: usize, files: usize) -> usize {
 
 /// The grid of files, in the card that holds the list. Returns what the user did.
 pub(crate) fn grid(
-    app: &mut NovaPdfApp,
+    app: &mut PdfCraftApp,
     ui: &mut egui::Ui,
     t: &Tokens,
     checks: &[Result<usize, String>],
@@ -446,7 +446,7 @@ fn pending_offset_id() -> egui::Id {
     egui::Id::unique("pdfcraft-combine-grid-offset")
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// The file shown large, the page on screen (0-based, in the file) and its render, while it
     /// shows (tests and the control channel).
     pub fn combine_preview(&self) -> Option<(String, usize, ThumbState)> {

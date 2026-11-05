@@ -2,7 +2,7 @@ use super::{Calculate, FieldLook, FieldProps, FormField, FormFieldKind, Format, 
 
 // ───────────────────────────────────────────────────────────────────────── Field Properties
 
-impl crate::NovaPdfApp {
+impl crate::PdfCraftApp {
     /// Open Field Properties for a field of the active document.
     pub fn open_field_props(&mut self, name: &str, widget: usize) {
         let Some((index, id)) = self.active_ids() else { return };

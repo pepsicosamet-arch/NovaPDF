@@ -9,7 +9,7 @@ use pdfcraft_engine::DocId;
 use pdfcraft_engine::ocr::{LANGUAGES, OcrPage, OcrSettings};
 
 use crate::theme::{self, Tokens};
-use crate::{NovaPdfApp, widgets};
+use crate::{PdfCraftApp, widgets};
 
 /// Which pages to read.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -90,7 +90,7 @@ pub struct AutoOcr {
     pub generation: u64,
 }
 
-pub(crate) fn body(ui: &mut egui::Ui, app: &mut NovaPdfApp, t: &Tokens) -> (bool, bool) {
+pub(crate) fn body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> (bool, bool) {
     let pages = app.active_ids().and_then(|(_, id)| app.session.get(id)).map_or(1, |d| d.info.pages.len().max(1));
     let available = pdfcraft_engine::ocr::available();
     let d = &mut app.ocr_draft;
@@ -169,7 +169,7 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut NovaPdfApp, t: &Tokens) -> (bool
     (go, cancel)
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// Recognize text on the pages chosen in the dialog, in the background.
     pub fn start_ocr(&mut self) {
         let Some((vi, id)) = self.active_ids() else { return };
@@ -403,7 +403,7 @@ fn recognize_files(
     msg
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// Stop a running recognition (the pages read so far are kept).
     pub fn cancel_ocr(&mut self) {
         if let Some(r) = &self.ocr_run
@@ -558,14 +558,14 @@ mod tests {
         Session::new().create_from_images(&[("scan.png".into(), png.into_inner())]).unwrap().to_vec()
     }
 
-    fn app_with(pdf: Vec<u8>) -> NovaPdfApp {
-        let mut app = NovaPdfApp::new();
+    fn app_with(pdf: Vec<u8>) -> PdfCraftApp {
+        let mut app = PdfCraftApp::new();
         app.open_bytes("doc.pdf", None, pdf).unwrap();
         app.quick_tool = QuickTool::EditText;
         app
     }
 
-    fn found(app: &mut NovaPdfApp) -> Option<usize> {
+    fn found(app: &mut PdfCraftApp) -> Option<usize> {
         app.scan_to_read().map(|s| s.page)
     }
 
@@ -630,13 +630,13 @@ mod tests {
     #[test]
     fn the_result_of_an_automatic_run_waits_for_read_mode_and_dialogs() {
         let word = || pdfcraft_engine::ocr::PlacedWord { text: "scanned".into(), origin: [72.0, 700.0], across: [60.0, 0.0], up: [0.0, 12.0] };
-        let finished = |app: &NovaPdfApp, automatic: bool| {
+        let finished = |app: &PdfCraftApp, automatic: bool| {
             let generation = app.session.get(app.active_ids().unwrap().1).unwrap().edit_generation();
             let page = pdfcraft_engine::ocr::OcrPage { page: 0, words: vec![word()], already_on_page: 0, skipped: None };
             let progress = Arc::new(Mutex::new(OcrProgress { done: 1, total: 1, result: Some(Ok(vec![page])), cancel: false }));
             OcrRun { doc: app.active_ids().unwrap().1, progress, automatic: automatic.then_some(AutoOcr { page: 0, generation }) }
         };
-        let label = |app: &NovaPdfApp| app.session.get(app.active_ids().unwrap().1).unwrap().can_undo().map(String::from);
+        let label = |app: &PdfCraftApp| app.session.get(app.active_ids().unwrap().1).unwrap().can_undo().map(String::from);
 
         let mut app = app_with(scan());
         app.ocr_run = Some(finished(&app, true));
@@ -710,7 +710,7 @@ mod tests {
 
     #[test]
     fn a_run_whose_worker_died_ends_instead_of_waiting_forever() {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         let progress = Arc::new(Mutex::new(OcrProgress { total: 3, ..Default::default() }));
         poison(&progress);

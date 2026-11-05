@@ -1,4 +1,4 @@
-use super::{GridDrop, GridFile, NovaPdfApp};
+use super::{GridDrop, GridFile, PdfCraftApp};
 #[cfg(not(target_arch = "wasm32"))]
 use super::{OpenRequest, open_worker};
 
@@ -11,7 +11,7 @@ fn read_grid_file((name, source): GridFile) -> Result<(String, Vec<u8>), (String
     Ok((name, bytes))
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     #[cfg(not(target_arch = "wasm32"))]
     pub(super) fn open_dropped(&mut self, f: egui::DroppedFileHandle, _ctx: &egui::Context) {
         let p = f.path().to_string_lossy().into_owned();

@@ -1,6 +1,6 @@
 use super::*;
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     pub(super) fn shortcuts(&mut self, ctx: &egui::Context) {
         use egui::Key;
         // "Save changes?" is modal: its keys are its own (⌘D is Don't save there, not Document
@@ -83,7 +83,7 @@ impl NovaPdfApp {
     }
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// The quick tools' keys, as in Acrobat: V selects, H pans, and holding Space pans until it
     /// is released. Plain letters, so not while a text field, a form field, a dialog or the
     /// palette has the keyboard.

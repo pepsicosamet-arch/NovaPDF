@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use pdfcraft_engine::{DocId, Edit, SplitBy};
 
-use crate::NovaPdfApp;
+use crate::PdfCraftApp;
 
 /// Why files were picked.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -310,7 +310,7 @@ fn read_named(path: &std::path::Path) -> Result<(String, Vec<u8>), (String, Stri
     }
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// Ask for files to add to the Combine files list (its Add files… button).
     pub fn combine_dialog(&mut self) {
         self.pick_files(FilePurpose::Combine, true);
@@ -900,7 +900,7 @@ pub(crate) fn strip_pdf(name: &str) -> &str {
     name.strip_suffix(".pdf").or_else(|| name.strip_suffix(".PDF")).unwrap_or(name)
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// Prepare a form ▸ Import data: XFDF, FDF, XML, CSV or text.
     pub fn import_data_dialog(&mut self) {
         self.import_dialog(false);
@@ -1185,7 +1185,7 @@ mod stem_tests {
         let out = dir.join("a").join("out");
         std::fs::create_dir_all(&out).unwrap();
         let absolute = dir.join("abs.pdf").to_string_lossy().into_owned();
-        let mut app = crate::NovaPdfApp::new();
+        let mut app = crate::PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.export_dir_override = Some(out.to_string_lossy().into_owned());
         for bad in ["../x.pdf", "..", ".", "", "sub/x.pdf", "sub\\x.pdf", "C:x.pdf", "x.pdf.", absolute.as_str()] {

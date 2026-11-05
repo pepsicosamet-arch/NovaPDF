@@ -5,7 +5,7 @@ use egui::{Align, Layout};
 use crate::theme::{self, Tokens};
 use pdfcraft_engine::Edit;
 
-use crate::{CloseRequest, Dialog, NovaPdfApp, PropsTab, panels::human_size, widgets};
+use crate::{CloseRequest, Dialog, PdfCraftApp, PropsTab, panels::human_size, widgets};
 
 pub(super) mod appearance;
 pub mod bookmark_styles_ui;
@@ -71,7 +71,7 @@ struct Pending {
     next: Option<Dialog>,
 }
 
-pub fn show(app: &mut NovaPdfApp, ctx: &egui::Context) {
+pub fn show(app: &mut PdfCraftApp, ctx: &egui::Context) {
     // The page sets hover cursors from the raw pointer position (form fields, links, comments)
     // before any dialog is drawn, and nothing under a modal's backdrop takes clicks. Start from
     // the arrow; the modal's own widgets set theirs as they are drawn.
@@ -84,7 +84,7 @@ pub fn show(app: &mut NovaPdfApp, ctx: &egui::Context) {
 }
 
 /// Draw the active modal dialog and apply the action the user chose.
-fn dialogs(app: &mut NovaPdfApp, ctx: &egui::Context) {
+fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
     password(app, ctx);
     save_prompt(app, ctx);
     link_prompt(app, ctx);
@@ -144,7 +144,7 @@ fn dialogs(app: &mut NovaPdfApp, ctx: &egui::Context) {
 }
 
 /// The dialog's content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_body(ui: &mut egui::Ui, app: &mut NovaPdfApp, dialog: Dialog, req: &mut Pending) -> bool {
+fn dialog_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, dialog: Dialog, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     match dialog {
         Dialog::WordCount => {
@@ -462,7 +462,7 @@ fn dialog_body(ui: &mut egui::Ui, app: &mut NovaPdfApp, dialog: Dialog, req: &mu
 }
 
 /// `Dialog::Properties(tab)` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_properties(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending, tab: PropsTab) -> bool {
+fn dialog_properties(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending, tab: PropsTab) -> bool {
     let t = Tokens::get(ui.ctx());
     ui.label(egui::RichText::new(tl!("Document Properties")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
@@ -893,7 +893,7 @@ fn dialog_properties(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending,
 }
 
 /// `Dialog::Split` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_split(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_split(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     ui.label(egui::RichText::new(tl!("Split document")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
@@ -965,7 +965,7 @@ fn dialog_split(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> b
 }
 
 /// `Dialog::ReplacePages` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_replace_pages(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_replace_pages(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     let count = app.active_ids().and_then(|(_, id)| app.session.get(id)).map(|d| d.info.pages.len()).unwrap_or(1).max(1);
     let Some(d) = app.replace_draft.as_mut() else {
@@ -1020,7 +1020,7 @@ fn dialog_replace_pages(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pendi
 }
 
 /// `Dialog::RedactProps` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_redact_props(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_redact_props(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     let mut prefs = app.redact_prefs.clone();
     let (ok, cancel) = crate::redact_ui::props_body(ui, &mut prefs, &t);
@@ -1039,7 +1039,7 @@ fn dialog_redact_props(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pendin
 }
 
 /// `Dialog::Extract` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_extract(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_extract(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     let (selected, total) = app.active_ids().map_or((Vec::new(), 0), |(i, _)| (app.views[i].target_pages(), app.views[i].page_count()));
     ui.label(egui::RichText::new(tl!("Extract pages")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
@@ -1087,7 +1087,7 @@ fn dialog_extract(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) ->
 }
 
 /// `Dialog::RotatePages` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_rotate_pages(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_rotate_pages(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     use pdfcraft_engine::{PageOrientation as O, PageParity as P};
     let n = app.active_ids().and_then(|(_, id)| app.session.get(id)).map_or(1, |d| d.info.pages.len());
     let d = &mut app.rotate_draft;
@@ -1166,7 +1166,7 @@ fn dialog_rotate_pages(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pendin
 }
 
 /// `Dialog::DuplicateField` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_duplicate_field(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_duplicate_field(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     let n = app.active_ids().and_then(|(_, id)| app.session.get(id)).map_or(1, |d| d.info.pages.len());
     let Some(d) = app.duplicate_draft.as_mut() else {
         req.close = true;
@@ -1203,7 +1203,7 @@ fn dialog_duplicate_field(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pen
 }
 
 /// `Dialog::CertificateViewer` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_certificate_viewer(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_certificate_viewer(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     ui.set_width(700.0);
     let trusted = app.session.trusted_certificates().to_vec();
@@ -1224,7 +1224,7 @@ fn dialog_certificate_viewer(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut 
 }
 
 /// `Dialog::SummarizeComments` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_summarize_comments(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_summarize_comments(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     ui.label(egui::RichText::new(tl!("Summarize Options")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
     ui.label(tl!("Choose a layout:"));
@@ -1252,7 +1252,7 @@ fn dialog_summarize_comments(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut 
 }
 
 /// `Dialog::Revert` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_revert(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_revert(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     let name = app.active_ids().and_then(|(_, id)| app.session.get(id)).map(|d| d.name.clone()).unwrap_or_default();
     ui.label(egui::RichText::new(tl!("Revert")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
@@ -1274,7 +1274,7 @@ fn dialog_revert(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> 
 }
 
 /// `Dialog::OverwriteChanged` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_overwrite_changed(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_overwrite_changed(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     #[cfg(not(target_arch = "wasm32"))]
     let name = app.pending_overwrite.as_ref().and_then(|p| app.session.get(p.id)).map(|d| d.name.clone()).unwrap_or_default();
     #[cfg(target_arch = "wasm32")]
@@ -1303,7 +1303,7 @@ fn dialog_overwrite_changed(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut P
 }
 
 /// `Dialog::Print` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_print(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_print(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     let Some((i, id)) = app.active_ids() else {
         req.close = true;
@@ -1335,7 +1335,7 @@ fn dialog_print(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> b
 }
 
 /// `Dialog::Signature` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_signature(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_signature(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     let (go, cancel, browse) =
         crate::fill_sign::signature_pad(ui, &t, &mut app.signature_draft, &mut app.signature_preview, &mut app.signature_photo);
@@ -1361,7 +1361,7 @@ fn dialog_signature(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) 
 }
 
 /// `Dialog::Preferences` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_preferences(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_preferences(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     ui.set_width(610.0);
     let t = Tokens::get(ui.ctx());
     preferences::preferences_header(ui, &t);
@@ -1398,7 +1398,7 @@ fn preferences_scroll(ui: &mut egui::Ui, max: f32, add_contents: impl FnOnce(&mu
 }
 
 /// `Dialog::NumberPages` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_number_pages(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_number_pages(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     use pdfcraft_engine::LabelStyle as L;
     ui.label(egui::RichText::new(tl!("Number pages")).font(theme::semibold(18.0)));
@@ -1459,7 +1459,7 @@ fn dialog_number_pages(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pendin
 }
 
 /// `Dialog::Recovery` content. Returns `false` when it has its own buttons and no footer is wanted.
-fn dialog_recovery(ui: &mut egui::Ui, app: &mut NovaPdfApp) -> bool {
+fn dialog_recovery(ui: &mut egui::Ui, app: &mut PdfCraftApp) -> bool {
     let t = Tokens::get(ui.ctx());
     ui.horizontal(|ui| {
         ui.add(crate::icons::image("clock-3", 22.0, t.accent));
@@ -1593,7 +1593,7 @@ fn dialog_about(ui: &mut egui::Ui, req: &mut Pending) -> bool {
     true
 }
 
-fn dialog_pin_tool(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -> bool {
+fn dialog_pin_tool(ui: &mut egui::Ui, app: &mut PdfCraftApp, req: &mut Pending) -> bool {
     let t = Tokens::get(ui.ctx());
     ui.horizontal(|ui| {
         ui.label(egui::RichText::new(tl!("Pin tools to Home")).font(theme::semibold(18.0)));
@@ -1678,7 +1678,7 @@ fn dialog_pin_tool(ui: &mut egui::Ui, app: &mut NovaPdfApp, req: &mut Pending) -
     true
 }
 
-fn dialog_footer(ui: &mut egui::Ui, app: &mut NovaPdfApp, dialog: Dialog, req: &mut Pending) {
+fn dialog_footer(ui: &mut egui::Ui, app: &mut PdfCraftApp, dialog: Dialog, req: &mut Pending) {
     ui.add_space(16.0);
     let changed = draft_changes(app).is_some_and(|c| !c.is_empty());
     // One row high: on its own, a right-to-left layout centres the buttons in all the height
@@ -1730,7 +1730,7 @@ fn dialog_footer(ui: &mut egui::Ui, app: &mut NovaPdfApp, dialog: Dialog, req: &
 }
 
 /// Acts on what the dialog asked for, once the modal is drawn.
-fn finish_dialog(app: &mut NovaPdfApp, dialog: Dialog, modal_closed: bool, req: &mut Pending) {
+fn finish_dialog(app: &mut PdfCraftApp, dialog: Dialog, modal_closed: bool, req: &mut Pending) {
     finish_requests(app, dialog, modal_closed, req);
     finish_actions(app, req);
     finish_redactions_and_fields(app, req);
@@ -1739,7 +1739,7 @@ fn finish_dialog(app: &mut NovaPdfApp, dialog: Dialog, modal_closed: bool, req: 
 }
 
 /// Runs the one-shot requests the dialog made.
-fn finish_requests(app: &mut NovaPdfApp, dialog: Dialog, modal_closed: bool, req: &mut Pending) {
+fn finish_requests(app: &mut PdfCraftApp, dialog: Dialog, modal_closed: bool, req: &mut Pending) {
     if let Some(yes) = req.recover {
         let keys: Vec<String> = app.recoverable.iter().map(|m| m.key.clone()).collect();
         if yes {
@@ -1788,7 +1788,7 @@ fn finish_requests(app: &mut NovaPdfApp, dialog: Dialog, modal_closed: bool, req
 }
 
 /// Runs the document actions the dialog asked for.
-fn finish_actions(app: &mut NovaPdfApp, req: &mut Pending) {
+fn finish_actions(app: &mut PdfCraftApp, req: &mut Pending) {
     if req.summarize_now {
         app.summarize_comments();
     }
@@ -1824,7 +1824,7 @@ fn finish_actions(app: &mut NovaPdfApp, req: &mut Pending) {
 }
 
 /// Redaction, hidden-data and field-properties requests.
-fn finish_redactions_and_fields(app: &mut NovaPdfApp, req: &mut Pending) {
+fn finish_redactions_and_fields(app: &mut PdfCraftApp, req: &mut Pending) {
     match req.redact_now.take() {
         Some(Dialog::RedactPages) => app.redact_pages(),
         Some(Dialog::RedactSearch) => {
@@ -1864,7 +1864,7 @@ fn finish_redactions_and_fields(app: &mut NovaPdfApp, req: &mut Pending) {
         && let Some(d) = app.field_props.take()
         && let Some(props) = d.props()
     {
-        let form = |app: &NovaPdfApp| app.active_ids().and_then(|(_, id)| app.session.get(id)).map(|doc| doc.form.clone());
+        let form = |app: &PdfCraftApp| app.active_ids().and_then(|(_, id)| app.session.get(id)).map(|doc| doc.form.clone());
         // A rename also renames the field in the formulas that read it.
         let before = props.name.as_ref().and_then(|_| form(app));
         // The widget being edited, by object: a radio button that joins a group by its new name
@@ -1902,7 +1902,7 @@ fn finish_redactions_and_fields(app: &mut NovaPdfApp, req: &mut Pending) {
 }
 
 /// Edits built from the dialog's drafts.
-fn finish_edits(app: &mut NovaPdfApp, dialog: Dialog, req: &mut Pending) {
+fn finish_edits(app: &mut PdfCraftApp, dialog: Dialog, req: &mut Pending) {
     if req.props_now
         && let Some(d) = app.comment_props.take()
     {
@@ -1961,7 +1961,7 @@ fn finish_edits(app: &mut NovaPdfApp, dialog: Dialog, req: &mut Pending) {
 }
 
 /// Closes (or switches) the dialog, then runs what closing it asked for.
-fn finish_close(app: &mut NovaPdfApp, dialog: Dialog, modal_closed: bool, req: &mut Pending) {
+fn finish_close(app: &mut PdfCraftApp, dialog: Dialog, modal_closed: bool, req: &mut Pending) {
     // Protect / Remove security replace the Properties dialog.
     let replaces = req.link_command.is_some_and(|c| c.starts_with("protect.")) || req.open_revision.is_some();
     if modal_closed || req.close || replaces {
@@ -2008,7 +2008,7 @@ fn finish_close(app: &mut NovaPdfApp, dialog: Dialog, modal_closed: bool, req: &
 }
 
 /// Info edits needed to make the document match the Description draft.
-fn draft_changes(app: &NovaPdfApp) -> Option<Vec<Edit>> {
+fn draft_changes(app: &PdfCraftApp) -> Option<Vec<Edit>> {
     let (id, draft) = app.props_draft.as_ref()?;
     let doc = app.session.get(*id)?;
     let mut edits: Vec<Edit> = INFO_KEYS

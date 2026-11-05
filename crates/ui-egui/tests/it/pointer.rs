@@ -11,7 +11,7 @@ use egui_kittest::kittest::Queryable;
 use pdfcraft_engine::StampKind;
 use pdfcraft_ui_egui::comments::CommentTool;
 use pdfcraft_ui_egui::fill_sign::FillTool;
-use pdfcraft_ui_egui::{Dialog, NovaPdfApp, QuickTool, UnlockPrompt};
+use pdfcraft_ui_egui::{Dialog, PdfCraftApp, QuickTool, UnlockPrompt};
 
 use crate::support::input::{coalesced_click, double_click, one_frame, touch_drag, touch_tap};
 
@@ -144,9 +144,9 @@ fn button_pdf() -> Vec<u8> {
 
 /// The app with `pdf` open at `zoom` percent and its first frames run. The left panel stays
 /// open only where a test places the page relative to the window's chrome.
-fn open(pdf: Vec<u8>, zoom: &'static str, left_open: bool) -> Harness<'static, NovaPdfApp> {
+fn open(pdf: Vec<u8>, zoom: &'static str, left_open: bool) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("test.pdf", None, pdf).unwrap();
         if !left_open {
@@ -161,30 +161,30 @@ fn open(pdf: Vec<u8>, zoom: &'static str, left_open: bool) -> Harness<'static, N
     h
 }
 
-fn stamp_tool(h: &mut Harness<'_, NovaPdfApp>) {
+fn stamp_tool(h: &mut Harness<'_, PdfCraftApp>) {
     h.state_mut().quick_tool = QuickTool::Stamp(StampKind::DynApproved);
     h.run_steps(4);
 }
 
-fn page(h: &Harness<'_, NovaPdfApp>) -> egui::Rect {
+fn page(h: &Harness<'_, PdfCraftApp>) -> egui::Rect {
     h.state().views[0].page_screen_rect(0).expect("page on screen")
 }
 
 /// The screen point at PDF (x, y) on the 300×400 page.
-fn at(h: &Harness<'_, NovaPdfApp>, x: f32, y: f32) -> egui::Pos2 {
+fn at(h: &Harness<'_, PdfCraftApp>, x: f32, y: f32) -> egui::Pos2 {
     let r = page(h);
     let k = r.width() / 300.0;
     r.min + egui::vec2(x * k, (400.0 - y) * k)
 }
 
-fn cursor_at(h: &mut Harness<'_, NovaPdfApp>, p: egui::Pos2) -> egui::CursorIcon {
+fn cursor_at(h: &mut Harness<'_, PdfCraftApp>, p: egui::Pos2) -> egui::CursorIcon {
     h.hover_at(p);
     h.run_steps(2);
     h.output().platform_output.cursor_icon
 }
 
 /// A mouse click: press and release in frames of their own, as `drag_at` and `drop_at` send them.
-fn mouse_click(h: &mut Harness<'_, NovaPdfApp>, p: egui::Pos2) {
+fn mouse_click(h: &mut Harness<'_, PdfCraftApp>, p: egui::Pos2) {
     h.hover_at(p);
     h.run_steps(1);
     h.drag_at(p);
@@ -194,7 +194,7 @@ fn mouse_click(h: &mut Harness<'_, NovaPdfApp>, p: egui::Pos2) {
 }
 
 /// A mouse drag from `from` by `by`, held over two frames on the way.
-fn mouse_drag(h: &mut Harness<'_, NovaPdfApp>, from: egui::Pos2, by: egui::Vec2) {
+fn mouse_drag(h: &mut Harness<'_, PdfCraftApp>, from: egui::Pos2, by: egui::Vec2) {
     h.hover_at(from);
     h.run_steps(1);
     h.drag_at(from);
@@ -207,30 +207,30 @@ fn mouse_drag(h: &mut Harness<'_, NovaPdfApp>, from: egui::Pos2, by: egui::Vec2)
     }
 }
 
-fn stamps(h: &Harness<'_, NovaPdfApp>) -> usize {
+fn stamps(h: &Harness<'_, PdfCraftApp>) -> usize {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().info.annotations.iter().filter(|a| a.subtype == "Stamp").count()
 }
 
-fn square(h: &Harness<'_, NovaPdfApp>) -> Option<[f32; 4]> {
+fn square(h: &Harness<'_, PdfCraftApp>) -> Option<[f32; 4]> {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().info.annotations.iter().find(|a| a.subtype == "Square").map(|a| a.rect)
 }
 
-fn agree(h: &Harness<'_, NovaPdfApp>) -> Vec<String> {
+fn agree(h: &Harness<'_, PdfCraftApp>) -> Vec<String> {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().form.iter().find(|f| f.name == "agree").unwrap().value.clone()
 }
 
 /// Whether the page's hover tip shows and says `text`.
-fn tip_says(h: &Harness<'_, NovaPdfApp>, text: &str) -> bool {
+fn tip_says(h: &Harness<'_, PdfCraftApp>, text: &str) -> bool {
     let Some(tip) = h.ctx.memory(|m| m.area_rect(egui::Id::unique("canvas-hover"))).filter(|_| tip_shown(h)) else { return false };
     h.query_all_by_label_contains(text).any(|n| tip.contains(n.rect().center()))
 }
 
 /// Hovers `p` until `want` accepts the cursor there (text layers and paragraph boxes arrive from
 /// worker threads), and returns the last cursor seen.
-fn wait_for_cursor(h: &mut Harness<'_, NovaPdfApp>, p: egui::Pos2, want: impl Fn(egui::CursorIcon) -> bool) -> egui::CursorIcon {
+fn wait_for_cursor(h: &mut Harness<'_, PdfCraftApp>, p: egui::Pos2, want: impl Fn(egui::CursorIcon) -> bool) -> egui::CursorIcon {
     let mut cursor = egui::CursorIcon::Default;
     for _ in 0..50 {
         cursor = cursor_at(h, p);
@@ -314,7 +314,7 @@ fn select_tool_over_a_comment_on_text_offers_the_move_arrow() {
 fn a_links_tip_shows_only_with_its_hand() {
     let mut h = open(link_pdf(), "150", false);
     let on_link = at(&h, 150.0, 325.0);
-    let hover = |h: &mut Harness<'_, NovaPdfApp>, tool: QuickTool, nudge: f32| {
+    let hover = |h: &mut Harness<'_, PdfCraftApp>, tool: QuickTool, nudge: f32| {
         h.state_mut().quick_tool = tool;
         h.run_steps(4);
         // A new position each time, so the hover is fresh.
@@ -363,7 +363,7 @@ fn a_comments_tip_shows_with_every_tool_beside_its_cursor() {
     let mut h = open(comment_on_text_pdf(), "150", false);
     // Inside the rectangle comment by "Reviewer": where there is no text, and over a word.
     let (blank, on_text) = (at(&h, 120.0, 315.0), at(&h, 60.0, 303.0));
-    let hover = |h: &mut Harness<'_, NovaPdfApp>, tool: QuickTool, p: egui::Pos2, want: egui::CursorIcon| {
+    let hover = |h: &mut Harness<'_, PdfCraftApp>, tool: QuickTool, p: egui::Pos2, want: egui::CursorIcon| {
         h.state_mut().quick_tool = tool;
         h.run_steps(4);
         let cursor = wait_for_cursor(h, p, |c| c == want);
@@ -522,7 +522,7 @@ fn a_dragged_panel_edge_passes_over_a_link_without_its_tip() {
 }
 
 /// Send one wheel event over the page and let its scrolling settle.
-fn wheel(h: &mut Harness<'_, NovaPdfApp>, delta: egui::Vec2) {
+fn wheel(h: &mut Harness<'_, PdfCraftApp>, delta: egui::Vec2) {
     h.hover_at(egui::pos2(800.0, 500.0));
     h.event(egui::Event::MouseWheel {
         unit: egui::MouseWheelUnit::Point,
@@ -572,13 +572,13 @@ fn stamp_cursor_stays_off_the_chrome_above_a_page_scrolled_under_it() {
 }
 
 /// Whether the page's hover tip was drawn in the last frame.
-fn tip_shown(h: &Harness<'_, NovaPdfApp>) -> bool {
+fn tip_shown(h: &Harness<'_, PdfCraftApp>) -> bool {
     let tip = egui::LayerId::new(egui::Order::Tooltip, egui::Id::unique("canvas-hover"));
     h.ctx.memory(|m| m.areas().is_visible(&tip))
 }
 
 /// Opens the Unlock prompt, a dialog with a backdrop over the whole window, from the next frame.
-fn open_unlock_prompt(h: &mut Harness<'_, NovaPdfApp>) {
+fn open_unlock_prompt(h: &mut Harness<'_, PdfCraftApp>) {
     let doc = h.state().views[0].id;
     h.state_mut().unlock_prompt = Some(UnlockPrompt { doc, name: "test.pdf".into(), input: String::new(), error: None, then: None });
 }
@@ -723,7 +723,7 @@ fn coalesced_click_places_a_stamp() {
 }
 
 /// The value of the field named `name` on the first view's document.
-fn field_value(h: &Harness<'_, NovaPdfApp>, name: &str) -> Vec<String> {
+fn field_value(h: &Harness<'_, PdfCraftApp>, name: &str) -> Vec<String> {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().form.iter().find(|f| f.name == name).unwrap().value.clone()
 }
@@ -741,7 +741,7 @@ fn a_press_on_one_check_box_released_over_another_ticks_neither() {
 
 /// A click whose pointer slips from `press` to `release` before the button comes up (a click
 /// still, to egui, while they are close), in frames of their own as [`mouse_click`] sends them.
-fn slipping_click(h: &mut Harness<'_, NovaPdfApp>, press: egui::Pos2, release: egui::Pos2) {
+fn slipping_click(h: &mut Harness<'_, PdfCraftApp>, press: egui::Pos2, release: egui::Pos2) {
     h.hover_at(press);
     h.run_steps(1);
     h.drag_at(press);
@@ -997,13 +997,13 @@ fn note_over_link_pdf() -> Vec<u8> {
     ])
 }
 
-fn link_tool(h: &mut Harness<'_, NovaPdfApp>) {
+fn link_tool(h: &mut Harness<'_, PdfCraftApp>) {
     h.state_mut().quick_tool = QuickTool::Link;
     h.run_steps(4);
 }
 
 /// A right-click at `p`: press and release in frames of their own.
-fn right_click(h: &mut Harness<'_, NovaPdfApp>, p: egui::Pos2) {
+fn right_click(h: &mut Harness<'_, PdfCraftApp>, p: egui::Pos2) {
     h.hover_at(p);
     h.run_steps(1);
     for pressed in [true, false] {
@@ -1012,7 +1012,7 @@ fn right_click(h: &mut Harness<'_, NovaPdfApp>, p: egui::Pos2) {
     h.run_steps(3);
 }
 
-fn pending_url(h: &Harness<'_, NovaPdfApp>) -> Option<String> {
+fn pending_url(h: &Harness<'_, PdfCraftApp>) -> Option<String> {
     h.state().pending_link.as_ref().map(|l| l.url.clone())
 }
 
@@ -1158,7 +1158,7 @@ fn a_click_on_a_form_field_deselects_the_selected_comment() {
 }
 
 /// The camera tool's quadrilateral, corner by corner, in page view points.
-fn camera_corners(h: &Harness<'_, NovaPdfApp>) -> Option<[[f32; 2]; 4]> {
+fn camera_corners(h: &Harness<'_, PdfCraftApp>) -> Option<[[f32; 2]; 4]> {
     h.state().views[0].camera.map(|q| q.corners)
 }
 
@@ -1207,7 +1207,7 @@ fn commented_text_field_pdf() -> Vec<u8> {
 }
 
 /// Rests the pointer at `p` long enough for a tooltip.
-fn rest_at(h: &mut Harness<'_, NovaPdfApp>, p: egui::Pos2) {
+fn rest_at(h: &mut Harness<'_, PdfCraftApp>, p: egui::Pos2) {
     h.hover_at(p);
     for _ in 0..40 {
         h.step();
@@ -1312,7 +1312,7 @@ fn two_pages_pdf() -> Vec<u8> {
 
 /// Sets a tool up (`tool`), presses above page 1's bottom edge and drags onto page 2 in one frame,
 /// so egui sees the drag only once the pointer is on page 2, and returns the app after the release.
-fn drag_seen_only_past_page_ones_edge(tool: impl FnOnce(&mut NovaPdfApp)) -> Harness<'static, NovaPdfApp> {
+fn drag_seen_only_past_page_ones_edge(tool: impl FnOnce(&mut PdfCraftApp)) -> Harness<'static, PdfCraftApp> {
     let mut h = open(two_pages_pdf(), "100", false);
     tool(h.state_mut());
     h.run_steps(4);
@@ -1610,7 +1610,7 @@ fn a_right_click_with_edit_text_on_added_text_unselects_the_comment() {
 
 /// Two pages with their gaps hidden, after `tool` set the tool up, and a point on the row of pixels
 /// where they touch, which lies on both.
-fn touching_pages(tool: impl FnOnce(&mut NovaPdfApp)) -> (Harness<'static, NovaPdfApp>, egui::Pos2) {
+fn touching_pages(tool: impl FnOnce(&mut PdfCraftApp)) -> (Harness<'static, PdfCraftApp>, egui::Pos2) {
     let mut h = open(two_pages_pdf(), "100", false);
     h.state_mut().views[0].show_page_gaps = false;
     tool(h.state_mut());
@@ -1625,7 +1625,7 @@ fn touching_pages(tool: impl FnOnce(&mut NovaPdfApp)) -> (Harness<'static, NovaP
 }
 
 /// The pages the document's stamps are on.
-fn stamp_pages(h: &Harness<'_, NovaPdfApp>) -> Vec<usize> {
+fn stamp_pages(h: &Harness<'_, PdfCraftApp>) -> Vec<usize> {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().info.annotations.iter().filter(|a| a.subtype == "Stamp").map(|a| a.page).collect()
 }
@@ -1698,7 +1698,7 @@ fn a_fill_and_sign_click_places_nothing_while_a_mark_is_moved() {
     let mut h = open(comment_on_text_pdf(), "150", false);
     h.state_mut().quick_tool = QuickTool::Fill(FillTool::Check);
     h.run_steps(4);
-    let marks = |h: &Harness<'_, NovaPdfApp>| {
+    let marks = |h: &Harness<'_, PdfCraftApp>| {
         let s = h.state();
         s.session.get(s.views[0].id).unwrap().info.annotations.len()
     };

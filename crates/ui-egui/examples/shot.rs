@@ -10,7 +10,7 @@
 use std::time::{Duration, Instant};
 
 use egui_kittest::Harness;
-use pdfcraft_ui_egui::NovaPdfApp;
+use pdfcraft_ui_egui::PdfCraftApp;
 
 fn main() -> Result<(), String> {
     let mut args = std::env::args().skip(1);
@@ -32,7 +32,7 @@ fn main() -> Result<(), String> {
         }
     }
     let mut harness = Harness::builder().with_size(size).with_pixels_per_point(scale).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         if let Some(f) = &file {
             let bytes = std::fs::read(f).unwrap_or_default();
             let name = std::path::Path::new(f).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();

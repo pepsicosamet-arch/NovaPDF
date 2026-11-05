@@ -5,7 +5,7 @@ use egui_kittest::{
     kittest::{NodeT, Queryable},
 };
 use pdfcraft_engine::{AddedContent, AddedImage, Edit};
-use pdfcraft_ui_egui::{Clip, NovaPdfApp};
+use pdfcraft_ui_egui::{Clip, PdfCraftApp};
 
 fn fixture(rotation: u16, cropped: bool, shared: bool) -> Vec<u8> {
     fixture_at(rotation, cropped, shared, false)
@@ -39,9 +39,9 @@ fn fixture_at(rotation: u16, cropped: bool, shared: bool, collision: bool) -> Ve
     out
 }
 
-fn harness(bytes: Vec<u8>) -> Harness<'static, NovaPdfApp> {
+fn harness(bytes: Vec<u8>) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 1000.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.system_clipboard = false;
         app.open_bytes("ownership.pdf", None, bytes.clone()).unwrap();
@@ -52,14 +52,14 @@ fn harness(bytes: Vec<u8>) -> Harness<'static, NovaPdfApp> {
     h
 }
 
-fn point(h: &Harness<'static, NovaPdfApp>, user: [f64; 2]) -> Pos2 {
+fn point(h: &Harness<'static, PdfCraftApp>, user: [f64; 2]) -> Pos2 {
     let app = h.state();
     let info = &app.session.get(app.views[0].id).unwrap().info.pages[0];
     let v = info.user_to_view(user[0] as f32, user[1] as f32);
     app.views[0].page_xform(0).unwrap().norm_to_screen(v[0] / info.width, v[1] / info.height)
 }
 
-fn right_click(h: &mut Harness<'static, NovaPdfApp>, user: [f64; 2]) {
+fn right_click(h: &mut Harness<'static, PdfCraftApp>, user: [f64; 2]) {
     let p = point(h, user);
     h.hover_at(p);
     h.run_steps(1);
@@ -69,10 +69,10 @@ fn right_click(h: &mut Harness<'static, NovaPdfApp>, user: [f64; 2]) {
     h.run_steps(2);
 }
 
-fn reopened(app: &mut NovaPdfApp) -> NovaPdfApp {
+fn reopened(app: &mut PdfCraftApp) -> PdfCraftApp {
     let id = app.views[0].id;
     let bytes = app.session.save_bytes(id).unwrap();
-    let mut saved = NovaPdfApp::new();
+    let mut saved = PdfCraftApp::new();
     saved.open_bytes("saved.pdf", None, bytes.as_ref().clone()).unwrap();
     saved
 }
@@ -240,7 +240,7 @@ fn whole_page_actions_do_not_require_a_selection() {
 
 #[test]
 fn whole_page_actions_still_require_copy_permission() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.open_bytes("source.pdf", None, fixture(0, false, false)).unwrap();
     assert!(app.apply_edit(Edit::Protect(pdfcraft_engine::Protection { permissions_password: Some("owner".into()), ..Default::default() })));
     let bytes = app.session.save_bytes(app.views[0].id).unwrap();

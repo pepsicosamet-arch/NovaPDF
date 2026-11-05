@@ -1,4 +1,4 @@
-use super::{NovaPdfApp, StagingName, staging_suffixes};
+use super::{PdfCraftApp, StagingName, staging_suffixes};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::file_filter::AddFilterAnyCase as _;
 
@@ -10,7 +10,7 @@ pub struct PendingOverwrite {
     pub dest: String,
     target: SaveTarget,
     /// What was to run once the document is written (close its tab, quit).
-    after: Box<dyn FnOnce(&mut NovaPdfApp) + Send>,
+    after: Box<dyn FnOnce(&mut PdfCraftApp) + Send>,
 }
 
 /// Where Save writes.
@@ -22,7 +22,7 @@ pub enum SaveTarget {
     As,
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// Save the active document. Returns `true` if it was written.
     pub fn save_active(&mut self, target: SaveTarget) -> bool {
         match self.active {

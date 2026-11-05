@@ -5,7 +5,7 @@ use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use serde_json::{Value, json};
 
-use crate::{NovaPdfApp, control::ControlClient, open_worker};
+use crate::{PdfCraftApp, control::ControlClient, open_worker};
 
 fn fixture(pages: usize) -> Vec<u8> {
     let mut objects = vec!["<< /Type /Catalog /Pages 2 0 R >>".to_string()];
@@ -33,11 +33,11 @@ fn fixture(pages: usize) -> Vec<u8> {
 }
 
 #[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
-fn harness() -> (Harness<'static, NovaPdfApp>, ControlClient) {
+fn harness() -> (Harness<'static, PdfCraftApp>, ControlClient) {
     let slot: Arc<Mutex<Option<ControlClient>>> = Arc::default();
     let saved = slot.clone();
     let mut harness = Harness::builder().with_size(egui::vec2(1000.0, 700.0)).build_eframe(move |creation| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").expect("language preference");
         *saved.lock().expect("control-client slot") = Some(app.attach_control(&creation.egui_ctx));
         app.open_bytes("existing.pdf", None, fixture(3)).expect("existing document");
@@ -48,7 +48,7 @@ fn harness() -> (Harness<'static, NovaPdfApp>, ControlClient) {
 }
 
 #[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
-fn request(harness: &mut Harness<'static, NovaPdfApp>, client: &ControlClient, method: &str, params: Value) -> Value {
+fn request(harness: &mut Harness<'static, PdfCraftApp>, client: &ControlClient, method: &str, params: Value) -> Value {
     let reply = client.send(method, params);
     for _ in 0..5 {
         harness.step();
@@ -105,7 +105,7 @@ fn tool_open_file(case: &str, extension: &str, bytes: &[u8]) -> ToolOpenFile {
     ToolOpenFile(path)
 }
 
-fn tool_open_harness() -> Harness<'static, NovaPdfApp> {
+fn tool_open_harness() -> Harness<'static, PdfCraftApp> {
     let (mut harness, _) = harness();
     harness.state_mut().close_tab(0);
     harness.run_steps(2);
@@ -119,7 +119,7 @@ struct HeldToolOpen {
 }
 
 impl HeldToolOpen {
-    fn install(harness: &mut Harness<'static, NovaPdfApp>) -> Self {
+    fn install(harness: &mut Harness<'static, PdfCraftApp>) -> Self {
         let (gate, started, release, finished) = open_worker::prepare_gate();
         harness.state_mut().open_prepare_gate = Some(gate);
         Self { started, release, finished }
@@ -131,14 +131,14 @@ impl HeldToolOpen {
     }
 
     #[allow(clippy::expect_used)]
-    fn complete(&self, harness: &mut Harness<'static, NovaPdfApp>) {
+    fn complete(&self, harness: &mut Harness<'static, PdfCraftApp>) {
         self.release.send(()).expect("release the native preparation");
         self.finished.recv_timeout(Duration::from_secs(5)).expect("the native open returned its result");
         harness.run_steps(2);
     }
 }
 
-fn choose_export_tool(harness: &mut Harness<'static, NovaPdfApp>, file: &ToolOpenFile) {
+fn choose_export_tool(harness: &mut Harness<'static, PdfCraftApp>, file: &ToolOpenFile) {
     harness.state_mut().pick_override = Some(vec![file.0.to_string_lossy().into_owned()]);
     harness.state_mut().run_command("export.text");
     harness.run_steps(2);
@@ -578,7 +578,7 @@ struct PickerFiles<'a> {
     original_c: &'a [u8],
 }
 
-fn assert_picker_keeps_a_visible(harness: &mut Harness<'static, NovaPdfApp>, files: &PickerFiles<'_>) -> pdfcraft_engine::DocId {
+fn assert_picker_keeps_a_visible(harness: &mut Harness<'static, PdfCraftApp>, files: &PickerFiles<'_>) -> pdfcraft_engine::DocId {
     // Poll admission separately from consuming the picker callback: this reproduces
     // the same ordering as a UI frame, with both worker replies already available.
     harness.state_mut().poll_pending_opens();
@@ -602,7 +602,7 @@ fn assert_picker_keeps_a_visible(harness: &mut Harness<'static, NovaPdfApp>, fil
 }
 
 fn assert_picker_completion_releases_b(
-    harness: &mut Harness<'static, NovaPdfApp>,
+    harness: &mut Harness<'static, PdfCraftApp>,
     a_id: pdfcraft_engine::DocId,
     cancel: bool,
     files: &PickerFiles<'_>,
@@ -631,7 +631,7 @@ fn assert_picker_completion_releases_b(
     assert_picker_files_unchanged(files);
 }
 
-fn assert_document_a_after_picker(harness: &Harness<'static, NovaPdfApp>, a_id: pdfcraft_engine::DocId, cancel: bool) {
+fn assert_document_a_after_picker(harness: &Harness<'static, PdfCraftApp>, a_id: pdfcraft_engine::DocId, cancel: bool) {
     let expected_pages = if cancel { 2 } else { 3 };
     let doc = harness.state().session.get(a_id);
     assert!(doc.is_some(), "A after picker completion");
@@ -643,7 +643,7 @@ fn assert_document_a_after_picker(harness: &Harness<'static, NovaPdfApp>, a_id: 
     }
 }
 
-fn assert_document_b_after_picker(harness: &Harness<'static, NovaPdfApp>, active: usize, files: &PickerFiles<'_>) {
+fn assert_document_b_after_picker(harness: &Harness<'static, PdfCraftApp>, active: usize, files: &PickerFiles<'_>) {
     let doc = harness.state().session.get(harness.state().views[active].id);
     assert!(doc.is_some(), "ordinary B document");
     if let Some(doc) = doc {
@@ -653,7 +653,7 @@ fn assert_document_b_after_picker(harness: &Harness<'static, NovaPdfApp>, active
     }
 }
 
-fn assert_a_saved_source(harness: &Harness<'static, NovaPdfApp>, a_id: pdfcraft_engine::DocId, original: &[u8]) {
+fn assert_a_saved_source(harness: &Harness<'static, PdfCraftApp>, a_id: pdfcraft_engine::DocId, original: &[u8]) {
     let doc = harness.state().session.get(a_id);
     assert!(doc.is_some(), "A retains exactly one insertion or cancellation");
     if let Some(doc) = doc {
@@ -679,7 +679,7 @@ fn inline_tool_open_keeps_its_command_for_pdf_conversion_and_password_retry() {
     {
         let path = std::env::temp_dir().join(format!("pdfcraft-inline-tool-{}-{name}", std::process::id()));
         std::fs::write(&path, bytes).expect("write selected file");
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").expect("language preference");
         assert!(app.ctx.is_none(), "this exercises the no-context inline path");
         app.open_path_then(&path.to_string_lossy(), Some("export.text"));
@@ -740,7 +740,7 @@ fn launch_layout_waits_for_cli_opens_and_preserves_restored_tabs() {
     for reverse in [false, true] {
         for count in [1, 2] {
             for restored in [false, true] {
-                let mut app = NovaPdfApp::new();
+                let mut app = PdfCraftApp::new();
                 app.set_option("default-layout", "continuous").unwrap();
                 if restored {
                     app.open_bytes("restored.pdf", None, fixture(1)).unwrap();
@@ -805,7 +805,7 @@ fn launch_layout_waits_for_cli_opens_and_preserves_restored_tabs() {
 fn launch_layout_failed_or_cancelled_opens_do_not_target_existing_documents() {
     use crate::canvas::PageLayout;
     for cancel in [false, true] {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("default-layout", "continuous").unwrap();
         app.open_bytes("restored.pdf", None, fixture(1)).unwrap();
         let (sender, receiver) = std::sync::mpsc::channel();
@@ -846,7 +846,7 @@ fn flagged_startup_opens_wait_for_password_ownership_before_the_first_frame() {
     use crate::canvas::PageLayout;
     let locked = tool_open_file("launch-locked", "pdf", &encrypted_tool_fixture());
     let second = tool_open_file("launch-second", "pdf", &fixture(2));
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.set_option("default-layout", "continuous").unwrap();
     app.open_path_with_display(locked.0.to_str().unwrap(), PageLayout::TwoUp, false);
     let bytes = app.password_prompt.as_ref().unwrap().bytes.clone();

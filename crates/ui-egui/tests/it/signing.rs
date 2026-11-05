@@ -5,7 +5,7 @@ use egui::{Pos2, pos2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
 use pdfcraft_engine::SignatureStatus;
-use pdfcraft_ui_egui::{Dialog, NovaPdfApp, QuickTool, RightPanel, SignStep};
+use pdfcraft_ui_egui::{Dialog, PdfCraftApp, QuickTool, RightPanel, SignStep};
 
 const FIXTURE: &[u8] = b"%PDF-1.7
 1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
@@ -28,9 +28,9 @@ fn dir() -> std::path::PathBuf {
     d
 }
 
-fn harness(dir: std::path::PathBuf) -> Harness<'static, NovaPdfApp> {
+fn harness(dir: std::path::PathBuf) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("contract.pdf", None, FIXTURE.to_vec()).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -42,12 +42,12 @@ fn harness(dir: std::path::PathBuf) -> Harness<'static, NovaPdfApp> {
     h
 }
 
-fn at(h: &Harness<'static, NovaPdfApp>, x: f32, y: f32) -> Pos2 {
+fn at(h: &Harness<'static, PdfCraftApp>, x: f32, y: f32) -> Pos2 {
     let r = h.state().views[0].page_screen_rect(0).expect("page 1 on screen");
     pos2(r.left() + x / 300.0 * r.width(), r.top() + (200.0 - y) / 200.0 * r.height())
 }
 
-fn drag(h: &mut Harness<'static, NovaPdfApp>, from: Pos2, to: Pos2) {
+fn drag(h: &mut Harness<'static, PdfCraftApp>, from: Pos2, to: Pos2) {
     h.hover_at(from);
     h.run_steps(1);
     h.drag_at(from);
@@ -60,7 +60,7 @@ fn drag(h: &mut Harness<'static, NovaPdfApp>, from: Pos2, to: Pos2) {
     h.run_steps(3);
 }
 
-fn field<'a>(h: &'a Harness<'static, NovaPdfApp>, label: &'a str) -> egui_kittest::Node<'a> {
+fn field<'a>(h: &'a Harness<'static, PdfCraftApp>, label: &'a str) -> egui_kittest::Node<'a> {
     h.get_all_by_label(label).last().unwrap_or_else(|| panic!("no {label:?}"))
 }
 
@@ -105,7 +105,7 @@ fn drawing_a_signature_creating_an_id_signing_and_trusting() {
     assert_trust_and_id_persist(&h);
 }
 
-fn create_signing_id(h: &mut Harness<'static, NovaPdfApp>) {
+fn create_signing_id(h: &mut Harness<'static, PdfCraftApp>) {
     assert!(h.state_mut().execute("sign.digital"));
     assert_eq!(h.state().quick_tool, QuickTool::SignArea { certify: false });
     let (a, b) = (at(h, 40.0, 90.0), at(h, 220.0, 40.0));
@@ -135,7 +135,7 @@ fn create_signing_id(h: &mut Harness<'static, NovaPdfApp>) {
     h.get_by_label("Sign as \"Grace Hopper\"");
 }
 
-fn sign_with_created_id(h: &mut Harness<'static, NovaPdfApp>, dir: &std::path::Path) {
+fn sign_with_created_id(h: &mut Harness<'static, PdfCraftApp>, dir: &std::path::Path) {
     // A wrong password says so.
     field(h, "Digital ID password").click();
     h.run_steps(1);
@@ -167,7 +167,7 @@ fn sign_with_created_id(h: &mut Harness<'static, NovaPdfApp>, dir: &std::path::P
     h.get_by_label("At least one signature has problems.");
 }
 
-fn trust_signer_and_inspect_certificate(h: &mut Harness<'static, NovaPdfApp>) {
+fn trust_signer_and_inspect_certificate(h: &mut Harness<'static, PdfCraftApp>) {
     // Signatures panel: expand, trust the signer → valid.
     h.get_by_label_contains("Signed by Grace Hopper").click();
     h.run_steps(2);
@@ -206,7 +206,7 @@ fn trust_signer_and_inspect_certificate(h: &mut Harness<'static, NovaPdfApp>) {
     assert_eq!(h.state().dialog, None);
 }
 
-fn verify_signed_snapshot_reuse(h: &mut Harness<'static, NovaPdfApp>) {
+fn verify_signed_snapshot_reuse(h: &mut Harness<'static, PdfCraftApp>) {
     // View signed version opens the bytes the signature covers as a new document.
     h.get_by_label("View signed version").click();
     h.run_steps(3);
@@ -261,7 +261,7 @@ fn verify_signed_snapshot_reuse(h: &mut Harness<'static, NovaPdfApp>) {
     }
 }
 
-fn verify_dirty_snapshot_close(h: &mut Harness<'static, NovaPdfApp>) {
+fn verify_dirty_snapshot_close(h: &mut Harness<'static, PdfCraftApp>) {
     // Closing a dirty snapshot asks about saving instead of closing at once.
     h.get_by_label("View signed version").click();
     h.run_steps(3);
@@ -276,10 +276,10 @@ fn verify_dirty_snapshot_close(h: &mut Harness<'static, NovaPdfApp>) {
     assert_eq!(h.state().views.len(), 1);
 }
 
-fn assert_trust_and_id_persist(h: &Harness<'static, NovaPdfApp>) {
+fn assert_trust_and_id_persist(h: &Harness<'static, PdfCraftApp>) {
     // Trusted certificates and the ID list persist.
     let saved = h.state().persist();
-    let mut fresh = NovaPdfApp::new();
+    let mut fresh = PdfCraftApp::new();
     fresh.set_option("language", "en").unwrap();
     fresh.restore(&saved);
     assert_eq!((fresh.digital_ids.len(), fresh.session.trusted_certificates().len()), (1, 1));
@@ -336,14 +336,14 @@ fn save_as_keeps_a_signed_document_incremental() {
     let out = dir().join("copy.pdf");
     let (bytes, cert) = (signed.to_vec(), digital_id.certificate.clone());
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("contract.pdf", None, bytes).expect("opens");
         app.session.set_trusted_certificates(vec![cert]);
         app
     });
     h.run_steps(4);
-    let status = |h: &Harness<'static, NovaPdfApp>| {
+    let status = |h: &Harness<'static, PdfCraftApp>| {
         let s = h.state();
         s.session.get(s.views[0].id).unwrap().signatures.iter().find(|x| x.signed).map(|x| x.status)
     };
@@ -376,14 +376,14 @@ fn clicking_an_empty_signature_field_signs_it() {
 }
 
 /// The centre of `WITH_FIELD`'s signature field, opened as the second document.
-fn field_centre(h: &Harness<'static, NovaPdfApp>) -> Pos2 {
+fn field_centre(h: &Harness<'static, PdfCraftApp>) -> Pos2 {
     let r = h.state().views[1].page_screen_rect(0).expect("on screen");
     pos2(r.left() + 150.0 / 300.0 * r.width(), r.top() + (200.0 - 50.0) / 200.0 * r.height())
 }
 
 /// Opens `WITH_FIELD` as the second document and signs its empty field with the test ID, by
 /// clicking the field.
-fn sign_the_empty_field(h: &mut Harness<'static, NovaPdfApp>) {
+fn sign_the_empty_field(h: &mut Harness<'static, PdfCraftApp>) {
     h.state_mut().open_bytes("form.pdf", None, WITH_FIELD.to_vec()).unwrap();
     h.state_mut().active = Some(1);
     h.run_steps(6);
@@ -416,7 +416,7 @@ fn sign_the_empty_field(h: &mut Harness<'static, NovaPdfApp>) {
 }
 
 /// Whether the page's hover tip shows and says `text`.
-fn tip_says(h: &Harness<'static, NovaPdfApp>, text: &str) -> bool {
+fn tip_says(h: &Harness<'static, PdfCraftApp>, text: &str) -> bool {
     let layer = egui::LayerId::new(egui::Order::Tooltip, egui::Id::unique("canvas-hover"));
     let Some(tip) = h.ctx.memory(|m| m.area_rect(egui::Id::unique("canvas-hover")).filter(|_| m.areas().is_visible(&layer))) else { return false };
     h.query_all_by_label_contains(text).any(|n| tip.contains(n.rect().center()))
@@ -436,7 +436,7 @@ fn a_signature_badge_says_its_verdict_with_any_tool() {
         sig.summary()
     };
     let p = field_centre(&h);
-    let hover = |h: &mut Harness<'static, NovaPdfApp>, tool: QuickTool, at: Pos2| {
+    let hover = |h: &mut Harness<'static, PdfCraftApp>, tool: QuickTool, at: Pos2| {
         h.state_mut().quick_tool = tool;
         h.run_steps(4);
         h.hover_at(at);
@@ -457,7 +457,7 @@ fn the_fill_and_sign_signature_or_an_image_shows_in_a_digital_signature() {
     let mut h = harness(dir.clone());
     let p12 = concat!(env!("CARGO_MANIFEST_DIR"), "/../sign/tests/data/ec-p256.p12");
     let cert = pdfcraft_engine::sign::pkcs12::open(&std::fs::read(p12).unwrap(), "test").unwrap().certificate;
-    let sign_as = |h: &mut Harness<'static, NovaPdfApp>, rect: [f64; 4]| {
+    let sign_as = |h: &mut Harness<'static, PdfCraftApp>, rect: [f64; 4]| {
         h.state_mut().start_signing(0, Some(rect), None, None);
         let entry = h.state_mut().add_digital_id(p12, &cert);
         let d = h.state_mut().sign_draft.as_mut().unwrap();
@@ -505,7 +505,7 @@ fn the_fill_and_sign_signature_or_an_image_shows_in_a_digital_signature() {
     let signed = std::fs::read(dir.join("contract_signed.pdf")).unwrap();
     assert!(signed.windows(6).any(|w| w == b"/Image"), "the image is embedded");
     assert_eq!(s.session.get(s.views[0].id).unwrap().signatures.iter().filter(|x| x.signed).count(), 2);
-    let mut fresh = NovaPdfApp::new();
+    let mut fresh = PdfCraftApp::new();
     fresh.restore(&s.persist());
     assert_eq!(fresh.sign_graphic, SignGraphic::Image(image));
     // A saved choice that can't be read back falls back to the name.
@@ -572,7 +572,7 @@ fn the_signature_labels_follow_the_interface_language() {
 
 #[test]
 fn os_store_identities_are_not_persisted() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.set_option("language", "en").unwrap();
     for path in ["windows:Store signer", "keychain:Store signer", "file-id.p12"] {
         app.digital_ids.push(pdfcraft_ui_egui::DigitalIdEntry {
@@ -588,7 +588,7 @@ fn os_store_identities_are_not_persisted() {
     let settings: serde_json::Value = serde_json::from_str(&saved).unwrap();
     assert_eq!(settings["digital_ids"].as_array().unwrap().len(), 1);
     assert_eq!(settings["digital_ids"][0]["path"], "file-id.p12");
-    let mut restored = NovaPdfApp::new();
+    let mut restored = PdfCraftApp::new();
     restored.set_option("language", "en").unwrap();
     restored.restore(&saved);
     assert_eq!(restored.digital_ids.len(), 1);

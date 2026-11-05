@@ -5,7 +5,7 @@
 
 use egui::{Color32, CornerRadius, Pos2, Stroke};
 
-use crate::NovaPdfApp;
+use crate::PdfCraftApp;
 use crate::canvas::{DocView, PageXform};
 use pdfcraft_render::DocInfo;
 
@@ -163,7 +163,7 @@ fn write_clipboard_file(dir: &std::path::Path, name: &str, bytes: &[u8]) -> Resu
     Ok(path)
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// ⌘C / Ctrl+C copies the selected picture in its original format; Escape deselects it.
     pub(crate) fn image_pick_keys(&mut self, i: usize, ctx: &egui::Context) {
         let Some(picked) = self.views.get(i).and_then(|v| v.picked_image) else { return };

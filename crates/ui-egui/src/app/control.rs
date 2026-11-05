@@ -1,7 +1,7 @@
 use super::*;
 use crate::control;
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// Enable the UI control channel on `ctx` (opt-in; see [`control`]). Returns a client that
     /// sends requests to this app; [`control::serve`] exposes it on loopback.
     pub fn attach_control(&mut self, ctx: &egui::Context) -> control::ControlClient {

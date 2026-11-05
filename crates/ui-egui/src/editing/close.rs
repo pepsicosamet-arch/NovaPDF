@@ -1,4 +1,4 @@
-use super::NovaPdfApp;
+use super::PdfCraftApp;
 use super::save::SaveTarget;
 
 /// What the user was doing when we asked whether to save.
@@ -13,7 +13,7 @@ pub enum CloseRequest {
     All,
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// Close a tab, asking first if it has unsaved changes.
     pub fn request_close_tab(&mut self, index: usize) {
         // Text typed into a field counts as an unsaved change.

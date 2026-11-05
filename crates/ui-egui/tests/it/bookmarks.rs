@@ -3,7 +3,7 @@
 use egui::{Key, Modifiers};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::NovaPdfApp;
+use pdfcraft_ui_egui::PdfCraftApp;
 
 const PAGES: &[u8] = b"%PDF-1.7
 1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
@@ -14,9 +14,9 @@ const PAGES: &[u8] = b"%PDF-1.7
 trailer << /Root 1 0 R >>
 %%EOF";
 
-fn harness() -> Harness<'static, NovaPdfApp> {
+fn harness() -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("pages.pdf", None, PAGES.to_vec()).expect("opens");
         app.set_option("left", "closed").unwrap();
@@ -27,7 +27,7 @@ fn harness() -> Harness<'static, NovaPdfApp> {
     h
 }
 
-fn outline(h: &Harness<'static, NovaPdfApp>) -> Vec<(String, Option<usize>, usize)> {
+fn outline(h: &Harness<'static, PdfCraftApp>) -> Vec<(String, Option<usize>, usize)> {
     let id = h.state().views[0].id;
     fn flat(items: &[pdfcraft_render::OutlineItem], depth: usize, out: &mut Vec<(String, Option<usize>, usize)>) {
         for i in items {
@@ -41,12 +41,12 @@ fn outline(h: &Harness<'static, NovaPdfApp>) -> Vec<(String, Option<usize>, usiz
 }
 
 /// The inline rename editor (the text field, not its inner text run).
-fn field<'a>(h: &'a Harness<'static, NovaPdfApp>, value: &'a str) -> egui_kittest::Node<'a> {
+fn field<'a>(h: &'a Harness<'static, PdfCraftApp>, value: &'a str) -> egui_kittest::Node<'a> {
     h.query_all_by_value(value).next().unwrap_or_else(|| panic!("no editor showing {value:?}"))
 }
 
 /// Add a bookmark with ⌘B at the current page and name it by typing.
-fn add(h: &mut Harness<'static, NovaPdfApp>, title: &str) {
+fn add(h: &mut Harness<'static, PdfCraftApp>, title: &str) {
     h.key_press_modifiers(Modifiers::COMMAND, Key::B);
     h.run_steps(3);
     field(h, "Untitled"); // the inline editor is open and focused
@@ -58,7 +58,7 @@ fn add(h: &mut Harness<'static, NovaPdfApp>, title: &str) {
     h.run_steps(3);
 }
 
-fn menu(h: &mut Harness<'static, NovaPdfApp>, bookmark: &str, item: &str) {
+fn menu(h: &mut Harness<'static, PdfCraftApp>, bookmark: &str, item: &str) {
     h.get_by_label(bookmark).click_secondary();
     h.run_steps(2);
     h.get_by_label(item).click();
@@ -100,7 +100,7 @@ fn new_rename_reorder_indent_delete_and_undo() {
 }
 
 /// The side panel's width as egui keeps it from one frame to the next.
-fn panel_width(h: &Harness<'static, NovaPdfApp>) -> f32 {
+fn panel_width(h: &Harness<'static, PdfCraftApp>) -> f32 {
     h.ctx.data(|data| data.get_temp::<egui::Rect>(egui::Id::unique("pdfcraft-inspector-body"))).expect("the inspector body is shown").width()
 }
 
@@ -289,7 +289,7 @@ fn new_bookmarks_from_text_styles_from_the_bookmark_options() {
     h.state_mut().open_bytes("styled.pdf", None, styled_pdf()).unwrap();
     h.run_steps(3);
     let id = h.state().active.and_then(|i| h.state().views.get(i)).unwrap().id;
-    let open = |h: &mut Harness<'static, NovaPdfApp>| {
+    let open = |h: &mut Harness<'static, PdfCraftApp>| {
         h.get_by_label("Bookmark options").click();
         h.run_steps(2);
         h.get_by_label("New bookmarks from text styles…").click();
@@ -349,7 +349,7 @@ fn expanding_and_collapsing_all_bookmarks() {
         h.state_mut().apply_edit(Edit::AddBookmark { parent, index: 0, title: title.into(), page: 0, left: None, top: None });
     }
     h.run_steps(3);
-    let shown = |h: &Harness<'static, NovaPdfApp>, t: &str| h.query_by_label(t).is_some();
+    let shown = |h: &Harness<'static, PdfCraftApp>, t: &str| h.query_by_label(t).is_some();
     h.get_by_label("Bookmark options").click();
     h.run_steps(2);
     h.get_by_label("Expand all bookmarks").click();
@@ -373,12 +373,12 @@ fn expanding_and_collapsing_all_bookmarks() {
 fn style_and_colour_from_the_bookmark_menu() {
     let mut h = harness();
     add(&mut h, "Intro");
-    let look = |h: &Harness<'static, NovaPdfApp>| {
+    let look = |h: &Harness<'static, PdfCraftApp>| {
         let id = h.state().views[0].id;
         let b = &h.state().session.get(id).unwrap().info.outline[0];
         (b.bold, b.italic, b.color)
     };
-    let submenu = |h: &mut Harness<'static, NovaPdfApp>, menu: &str, item: &str| {
+    let submenu = |h: &mut Harness<'static, PdfCraftApp>, menu: &str, item: &str| {
         h.get_by_label("Intro").click_secondary();
         h.run_steps(2);
         // The submenu arrow is painted as an atom; the accessible name is the menu title.
@@ -426,14 +426,14 @@ trailer << /Root 1 0 R >>
     let mut h = harness();
     h.state_mut().open_bytes("outlined.pdf", None, OUTLINED.to_vec()).unwrap();
     h.run_steps(4);
-    let shown = |h: &Harness<'static, NovaPdfApp>, t: &str| h.query_by_label(t).is_some();
+    let shown = |h: &Harness<'static, PdfCraftApp>, t: &str| h.query_by_label(t).is_some();
     assert!(shown(&h, "Closed parent") && shown(&h, "Open parent") && shown(&h, "Uncounted parent"));
     assert!(!shown(&h, "Closed child A") && !shown(&h, "Closed child B"), "a negative /Count opens closed");
     assert!(shown(&h, "Open child A") && shown(&h, "Open child B"), "a positive /Count opens open");
     assert!(!shown(&h, "Uncounted child"), "only a positive /Count opens a bookmark");
 
     // The disclosure triangle at the row's left still opens and closes it.
-    let toggle = |h: &mut Harness<'static, NovaPdfApp>, title: &str| {
+    let toggle = |h: &mut Harness<'static, PdfCraftApp>, title: &str| {
         let row = h.get_by_label(title).rect();
         let at = egui::pos2(row.left() + 8.0, row.top() + 14.0);
         h.hover_at(at);
@@ -461,7 +461,7 @@ trailer << /Root 1 0 R >>
 }
 
 /// The active document's outline, flattened like [`outline`].
-fn active_outline(h: &Harness<'static, NovaPdfApp>) -> Vec<(String, Option<usize>, usize)> {
+fn active_outline(h: &Harness<'static, PdfCraftApp>) -> Vec<(String, Option<usize>, usize)> {
     let i = h.state().active.unwrap();
     let id = h.state().views[i].id;
     fn flat(items: &[pdfcraft_render::OutlineItem], depth: usize, out: &mut Vec<(String, Option<usize>, usize)>) {

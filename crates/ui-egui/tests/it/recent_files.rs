@@ -5,7 +5,7 @@ use egui::Key;
 use egui::accesskit::Role;
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::{Dialog, NovaPdfApp, RECENT_FILES_DEFAULT, RecentFile};
+use pdfcraft_ui_egui::{Dialog, PdfCraftApp, RECENT_FILES_DEFAULT, RecentFile};
 
 use crate::support;
 
@@ -15,19 +15,19 @@ fn recent_file(name: &str) -> RecentFile {
     RecentFile { name: name.into(), path: format!("/nowhere/{name}"), pages: 1, size: 0 }
 }
 
-fn names(app: &NovaPdfApp) -> Vec<&str> {
+fn names(app: &PdfCraftApp) -> Vec<&str> {
     app.recent.iter().map(|r| r.name.as_str()).collect()
 }
 
-fn app_with(files: &[&str]) -> NovaPdfApp {
-    let mut app = NovaPdfApp::new();
+fn app_with(files: &[&str]) -> PdfCraftApp {
+    let mut app = PdfCraftApp::new();
     app.set_option("language", "en").unwrap();
     app.recent.extend(files.iter().map(|n| recent_file(n)));
     app
 }
 
 /// Tall enough that the whole of Home is on screen without scrolling.
-fn harness(limit: usize, files: &[&str]) -> Harness<'static, NovaPdfApp> {
+fn harness(limit: usize, files: &[&str]) -> Harness<'static, PdfCraftApp> {
     let files: Vec<String> = files.iter().map(ToString::to_string).collect();
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 1600.0)).build_eframe(move |_cc| {
         let mut app = app_with(&files.iter().map(String::as_str).collect::<Vec<_>>());
@@ -39,12 +39,12 @@ fn harness(limit: usize, files: &[&str]) -> Harness<'static, NovaPdfApp> {
 }
 
 /// Open a document with a file behind it, as a file on disk is recorded.
-fn open(app: &mut NovaPdfApp, name: &str) {
+fn open(app: &mut PdfCraftApp, name: &str) {
     app.open_bytes(name, Some(format!("/nowhere/{name}")), PDF.to_vec()).unwrap();
 }
 
 /// Typed the way a person does: click the field, type, Enter.
-fn type_limit(h: &mut Harness<'static, NovaPdfApp>, value: &str) {
+fn type_limit(h: &mut Harness<'static, PdfCraftApp>, value: &str) {
     h.get_by_role_and_label(Role::SpinButton, "Recent files to keep").click();
     h.run_steps(2);
     h.key_press_modifiers(egui::Modifiers::COMMAND, Key::A);
@@ -130,7 +130,7 @@ fn the_longest_list_scrolls_in_the_smallest_window_down_to_clear() {
     support::open_menu(&mut h, "File");
     support::menu_row(&h, "Open Recent").hover();
     h.run_steps(3);
-    let foot = |h: &Harness<'static, NovaPdfApp>| support::menu_row(h, "Clear Recent Files").rect().max.y;
+    let foot = |h: &Harness<'static, PdfCraftApp>| support::menu_row(h, "Clear Recent Files").rect().max.y;
     assert!(foot(&h) > 520.0, "fifty rows run past the smallest window");
     support::menu_row(&h, "1.pdf").hover();
     h.run_steps(2);
@@ -209,12 +209,12 @@ fn the_limit_is_saved_and_restored_and_cuts_a_longer_list() {
         .collect();
     let entries: Vec<RecentFile> = paths.iter().map(|p| RecentFile { name: "x.pdf".into(), path: p.clone(), pages: 1, size: 0 }).collect();
     let json = serde_json::json!({ "recent": entries, "recent_limit": 2 }).to_string();
-    let mut restored = NovaPdfApp::new();
+    let mut restored = PdfCraftApp::new();
     restored.restore(&json);
     assert_eq!(restored.recent_limit, 2);
     let kept: Vec<&str> = restored.recent.iter().map(|r| r.path.as_str()).collect();
     assert_eq!(kept, [paths[0].as_str(), paths[1].as_str()]);
-    let mut again = NovaPdfApp::new();
+    let mut again = PdfCraftApp::new();
     again.restore(&restored.persist());
     assert_eq!(again.recent_limit, 2);
     assert_eq!(again.recent.len(), 2);
@@ -236,13 +236,13 @@ fn restoring_settings_does_not_check_recent_files_and_a_frame_drops_the_gone_one
         [&here, &gone].iter().map(|p| RecentFile { name: "x.pdf".into(), path: (*p).clone(), pages: 1, size: 0 }).collect();
     let json = serde_json::json!({ "recent": entries }).to_string();
 
-    let mut restored = NovaPdfApp::new();
+    let mut restored = PdfCraftApp::new();
     restored.restore(&json);
     let paths: Vec<&str> = restored.recent.iter().map(|r| r.path.as_str()).collect();
     assert_eq!(paths, [here.as_str(), gone.as_str()], "restoring keeps every entry without asking whether its file exists");
 
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 1600.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.run_inline = true;
         app.restore(&json);
@@ -267,7 +267,7 @@ fn a_settings_file_can_not_ask_for_a_limit_that_is_not_one() {
         ("{\"recent_limit\": 51}", 50),
         ("{\"recent_limit\": 18446744073709551615}", 50),
     ] {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.restore(saved);
         assert_eq!(app.recent_limit, want, "{saved}");
     }

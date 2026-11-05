@@ -1,6 +1,6 @@
 use super::{Host, Reply, Value, json};
 
-impl Host for crate::NovaPdfApp {
+impl Host for crate::PdfCraftApp {
     /// Cancel any in-progress pointer gesture in every open view.
     fn cancel_pointer_gestures(&mut self) {
         for view in &mut self.views {

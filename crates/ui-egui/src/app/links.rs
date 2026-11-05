@@ -1,6 +1,6 @@
 use super::*;
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn open_remote_link(&mut self, source: DocId, file: String, destination: pdfcraft_render::RemoteDestination) {
         if self.pending_remote_link.is_some() || self.pending_link.is_some() {

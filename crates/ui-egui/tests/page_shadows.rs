@@ -1,7 +1,7 @@
 //! Decorative page shadows are app preferences, never PDF edits.
 
 use egui_kittest::{Harness, kittest::Queryable};
-use pdfcraft_ui_egui::NovaPdfApp;
+use pdfcraft_ui_egui::PdfCraftApp;
 
 #[test]
 fn viewer_shadows_follow_the_preference_without_moving_pages() {
@@ -80,7 +80,7 @@ fn horizontal_viewport_fades_also_follow_the_preference() {
     assert_eq!(h.state().views[0].visible_page_rects(), pages);
 }
 
-fn scroll_down(h: &mut Harness<'static, NovaPdfApp>, points: f32) {
+fn scroll_down(h: &mut Harness<'static, PdfCraftApp>, points: f32) {
     h.hover_at(h.state().views[0].viewport_rect().center());
     h.run_steps(1);
     h.event(egui::Event::MouseWheel {
@@ -95,7 +95,7 @@ fn scroll_down(h: &mut Harness<'static, NovaPdfApp>, points: f32) {
 
 /// Inspect the actual egui painter output: untextured four-vertex gradients
 /// with a transparent edge, spanning one dimension of the document viewport.
-fn viewport_fades(h: &Harness<'static, NovaPdfApp>) -> Vec<egui::Rect> {
+fn viewport_fades(h: &Harness<'static, PdfCraftApp>) -> Vec<egui::Rect> {
     let viewport = h.state().views[0].viewport_rect();
     h.output()
         .shapes
@@ -252,10 +252,10 @@ fn rendered_page_content_is_identical_with_and_without_decoration() {
     }
 }
 
-fn harness(theme: &str) -> Harness<'static, NovaPdfApp> {
+fn harness(theme: &str) -> Harness<'static, PdfCraftApp> {
     let theme = theme.to_string();
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         // Save comparisons must not depend on crossing a /ModDate second boundary.
         app.session = app.session.with_clock(|| 1_700_000_000);
         app.set_option("language", "en").unwrap();
@@ -268,7 +268,7 @@ fn harness(theme: &str) -> Harness<'static, NovaPdfApp> {
     h
 }
 
-fn shadows(h: &Harness<'static, NovaPdfApp>, grid: bool) -> Vec<egui::Rect> {
+fn shadows(h: &Harness<'static, PdfCraftApp>, grid: bool) -> Vec<egui::Rect> {
     let color = pdfcraft_ui_egui::theme::Tokens::for_kind(h.state().theme).page_shadow;
     fn collect(shape: &egui::Shape, color: egui::Color32, grid: bool, out: &mut Vec<egui::Rect>) {
         match shape {
@@ -331,14 +331,14 @@ fn pdf() -> Vec<u8> {
 
 #[test]
 fn page_shadow_preference_round_trips_and_ignores_invalid_settings() {
-    let mut app = NovaPdfApp::new();
-    let enabled = |app: &NovaPdfApp| serde_json::from_str::<serde_json::Value>(&app.persist()).unwrap()["show_page_edge_shadows"].clone();
+    let mut app = PdfCraftApp::new();
+    let enabled = |app: &PdfCraftApp| serde_json::from_str::<serde_json::Value>(&app.persist()).unwrap()["show_page_edge_shadows"].clone();
     assert_eq!(enabled(&app), true);
     app.restore("{}");
     assert_eq!(enabled(&app), true);
     for value in [false, true] {
         app.set_option("show_page_edge_shadows", if value { "true" } else { "false" }).unwrap();
-        let mut restored = NovaPdfApp::new();
+        let mut restored = PdfCraftApp::new();
         restored.restore(&app.persist());
         assert_eq!(enabled(&restored), value);
     }

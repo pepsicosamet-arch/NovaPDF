@@ -24,13 +24,13 @@ pub(crate) use files::same_file;
 use frame::migrate_panel_state;
 pub(crate) use prefs::{MAX_AUTHOR_CHARS, date_text_for_pdf};
 
-impl Default for NovaPdfApp {
+impl Default for PdfCraftApp {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// The window's title and, on the web, the page's, from the active document (#3640). Done in
     /// `logic` too, which also runs while the window or browser tab is hidden: a document opened
     /// then (a `?file=` download finishing) still names the page an embedding host reads.
@@ -408,7 +408,7 @@ impl NovaPdfApp {
     }
 }
 
-impl eframe::App for NovaPdfApp {
+impl eframe::App for PdfCraftApp {
     /// While files are dragged over the window the system sends no pointer moves, so egui
     /// would keep the place the pointer entered at: tell it where the pointer really is, so the
     /// page grid can show (and use) the gap under it.

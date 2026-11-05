@@ -10,7 +10,7 @@ use crate::canvas::{DocView, PageToolContext, PageXform};
 use crate::page_cursor::Layer;
 use crate::page_router::{Hit, Owner};
 use crate::theme::{self, Tokens};
-use crate::{NovaPdfApp, QuickTool, widgets};
+use crate::{PdfCraftApp, QuickTool, widgets};
 
 const LINK_BLUE: Color32 = Color32::from_rgb(0x14, 0x73, 0xE6);
 /// How far around a link (screen points) the Link tool finds it, so a thin one can be picked.
@@ -184,7 +184,7 @@ pub(crate) fn keys(ctx: &egui::Context, view: &mut DocView) {
     }
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// Open Link Properties for a new link area or an existing link.
     pub(crate) fn open_link_props(&mut self, page: usize, rect: Option<[f64; 4]>, index: Option<usize>) {
         let Some((_, id)) = self.active_ids() else { return };

@@ -18,7 +18,7 @@ use std::time::{Duration, SystemTime};
 
 use pdfcraft_engine::DocId;
 
-use crate::NovaPdfApp;
+use crate::PdfCraftApp;
 
 /// How often an unchanged file is looked at.
 pub const IDLE: Duration = Duration::from_millis(250);
@@ -329,7 +329,7 @@ impl FileWatch {
     }
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// The documents to watch: every open one with a file, while the preference is on.
     fn watched(&self) -> impl Iterator<Item = (DocId, &str, Option<Stamp>, u64)> {
         self.views.iter().filter(|_| self.reload_changed_files).filter_map(|v| {
@@ -527,10 +527,10 @@ mod tests {
         file.set_modified(SystemTime::now() + Duration::from_secs(60)).unwrap();
     }
 
-    fn harness(path: &str) -> Harness<'static, NovaPdfApp> {
+    fn harness(path: &str) -> Harness<'static, PdfCraftApp> {
         let path = path.to_owned();
         let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-            let mut app = NovaPdfApp::new();
+            let mut app = PdfCraftApp::new();
             app.set_option("language", "en").unwrap();
             app.run_inline = true;
             app.open_path(&path);
@@ -542,7 +542,7 @@ mod tests {
 
     /// Version B of the open file, found by the watcher but not yet applied: queued as the worker
     /// thread queues what it finds between frames.
-    fn find_new_version(app: &mut NovaPdfApp, path: &str, bytes: &[u8]) -> Vec<Changed> {
+    fn find_new_version(app: &mut PdfCraftApp, path: &str, bytes: &[u8]) -> Vec<Changed> {
         rebuild(path, bytes);
         // One look sees the change, the next sees it settled and reads it.
         let (mut found, _) = app.watch.inline.tick();
@@ -551,7 +551,7 @@ mod tests {
         found
     }
 
-    fn doc<'a>(h: &'a Harness<'static, NovaPdfApp>) -> &'a pdfcraft_engine::Document {
+    fn doc<'a>(h: &'a Harness<'static, PdfCraftApp>) -> &'a pdfcraft_engine::Document {
         let app = h.state();
         app.session.get(app.views[0].id).unwrap()
     }

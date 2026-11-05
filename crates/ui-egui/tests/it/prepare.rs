@@ -6,16 +6,16 @@ use egui::accesskit::Role;
 use egui_kittest::Harness;
 use egui_kittest::kittest::{Queryable, by};
 use pdfcraft_engine::field_table::TableColumn;
-use pdfcraft_ui_egui::{Dialog, NovaPdfApp, QuickTool};
+use pdfcraft_ui_egui::{Dialog, PdfCraftApp, QuickTool};
 
-fn harness() -> Harness<'static, NovaPdfApp> {
+fn harness() -> Harness<'static, PdfCraftApp> {
     harness_with("form.pdf", include_bytes!("../data/form.pdf").to_vec())
 }
 
-fn harness_with(name: &'static str, bytes: Vec<u8>) -> Harness<'static, NovaPdfApp> {
+fn harness_with(name: &'static str, bytes: Vec<u8>) -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |cc| {
         cc.egui_ctx.options_mut(|options| options.warn_on_id_clash = true);
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes(name, None, bytes).unwrap();
         app.set_option("zoom", "150").unwrap();
@@ -26,13 +26,13 @@ fn harness_with(name: &'static str, bytes: Vec<u8>) -> Harness<'static, NovaPdfA
 }
 
 /// A point on page 1 at (x, y) points from its top-left.
-fn at(h: &Harness<'static, NovaPdfApp>, x: f32, y: f32) -> Pos2 {
+fn at(h: &Harness<'static, PdfCraftApp>, x: f32, y: f32) -> Pos2 {
     let r = h.state().views[0].page_screen_rect(0).expect("on screen");
     let k = r.width() / 300.0;
     r.min + egui::vec2(x * k, y * k)
 }
 
-fn drag(h: &mut Harness<'static, NovaPdfApp>, a: Pos2, b: Pos2) {
+fn drag(h: &mut Harness<'static, PdfCraftApp>, a: Pos2, b: Pos2) {
     h.hover_at(a);
     h.run_steps(1);
     h.drag_at(a);
@@ -45,12 +45,12 @@ fn drag(h: &mut Harness<'static, NovaPdfApp>, a: Pos2, b: Pos2) {
     h.run_steps(4);
 }
 
-fn names(h: &Harness<'static, NovaPdfApp>) -> Vec<String> {
+fn names(h: &Harness<'static, PdfCraftApp>) -> Vec<String> {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().form.iter().map(|f| f.name.clone()).collect()
 }
 
-fn rect_of(h: &Harness<'static, NovaPdfApp>, name: &str) -> [f64; 4] {
+fn rect_of(h: &Harness<'static, PdfCraftApp>, name: &str) -> [f64; 4] {
     let s = h.state();
     s.session.get(s.views[0].id).unwrap().form.iter().find(|f| f.name == name).unwrap().widgets[0].rect
 }
@@ -229,7 +229,7 @@ fn renaming_a_field_says_how_many_calculations_now_use_the_new_name() {
     let mut h = harness();
     h.state_mut().execute("form.prepare");
     h.run_steps(2);
-    let rename = |h: &mut Harness<'static, NovaPdfApp>, from: &str, to: &str| {
+    let rename = |h: &mut Harness<'static, PdfCraftApp>, from: &str, to: &str| {
         h.state_mut().open_field_props(from, 0);
         h.run_steps(2);
         h.state_mut().field_props.as_mut().expect("open").name = to.into();
@@ -241,7 +241,7 @@ fn renaming_a_field_says_how_many_calculations_now_use_the_new_name() {
     h.state_mut().field_props.as_mut().expect("open").calculate = Calculate::Notation("name * 2".into());
     h.get_by_label("OK").click();
     h.run_steps(3);
-    let calculation = |h: &Harness<'static, NovaPdfApp>| {
+    let calculation = |h: &Harness<'static, PdfCraftApp>| {
         let s = h.state();
         s.session.get(s.views[0].id).unwrap().form.iter().find(|f| f.name == "city").unwrap().actions.calculate.clone()
     };
@@ -325,7 +325,7 @@ fn position_tab_rotates_a_field() {
     let mut h = harness();
     h.state_mut().open_field_props("city", 0);
     h.run_steps(2);
-    let widget = |h: &Harness<'static, NovaPdfApp>| {
+    let widget = |h: &Harness<'static, PdfCraftApp>| {
         let s = h.state();
         let f = s.session.get(s.views[0].id).unwrap().form.iter().find(|f| f.name == "city").unwrap();
         f.widgets[0].clone()
@@ -450,7 +450,7 @@ fn choice_alignment(kind: pdfcraft_engine::NewField, label: &str, quadding: i64)
     h.state_mut()
         .apply_edit(Edit::SetFieldProps { name: "aligned_choice".into(), props: Box::new(FieldProps { quadding: Some(2), ..Default::default() }) });
     h.state_mut().apply_edit(Edit::SetFieldValue { name: "aligned_choice".into(), value: FieldValue::Choice(vec!["Two".into()]) });
-    let field = |h: &Harness<'static, NovaPdfApp>| {
+    let field = |h: &Harness<'static, PdfCraftApp>| {
         let app = h.state();
         app.session.get(app.views[0].id).unwrap().form.iter().find(|f| f.name == "aligned_choice").unwrap().clone()
     };
@@ -527,7 +527,7 @@ fn the_fields_panel_orders_tabs_manually() {
     h.state_mut().execute("form.prepare");
     h.state_mut().set_option("panel", "fields").unwrap();
     h.run_steps(3);
-    let order = |h: &Harness<'static, NovaPdfApp>| -> Vec<String> {
+    let order = |h: &Harness<'static, PdfCraftApp>| -> Vec<String> {
         let s = h.state();
         let form = &s.session.get(s.views[0].id).unwrap().form;
         let mut v: Vec<(usize, String)> = form.iter().filter_map(|f| f.widgets.iter().map(|w| w.tab).min().map(|t| (t, f.name.clone()))).collect();
@@ -589,8 +589,8 @@ fn aligning_distributing_and_sizing_several_fields() {
         });
     }
     h.run_steps(2);
-    let form = |h: &Harness<'static, NovaPdfApp>| h.state().session.get(h.state().views[0].id).unwrap().form.as_ref().clone();
-    let rect = |h: &Harness<'static, NovaPdfApp>, n: &str| form(h).iter().find(|f| f.name == n).unwrap().widgets[0].rect;
+    let form = |h: &Harness<'static, PdfCraftApp>| h.state().session.get(h.state().views[0].id).unwrap().form.as_ref().clone();
+    let rect = |h: &Harness<'static, PdfCraftApp>, n: &str| form(h).iter().find(|f| f.name == n).unwrap().widgets[0].rect;
     let a = ("a".to_string(), 0);
     let others = vec![("b".to_string(), 0), ("c".to_string(), 0)];
     // Align tops with a.
@@ -659,7 +659,7 @@ fn preview_fills_the_form_and_locked_fields_keep_their_properties() {
     h.run_steps(1);
     h.get_by_label("OK").click();
     h.run_steps(3);
-    let locked = |h: &Harness<'static, NovaPdfApp>| {
+    let locked = |h: &Harness<'static, PdfCraftApp>| {
         let s = h.state();
         s.session.get(s.views[0].id).unwrap().form.iter().find(|f| f.name == "city").unwrap().locked()
     };
@@ -751,11 +751,11 @@ fn actions_tab_edits_the_script_of_an_existing_action() {
     h.state_mut().execute("form.prepare");
     h.run_steps(2);
     let script = "if (event.value > 10) {\n  app.alert('Too many');\n}";
-    let actions = |h: &Harness<'static, NovaPdfApp>| {
+    let actions = |h: &Harness<'static, PdfCraftApp>| {
         let s = h.state();
         s.session.get(s.views[0].id).unwrap().field_actions("city")
     };
-    let open = |h: &mut Harness<'static, NovaPdfApp>| {
+    let open = |h: &mut Harness<'static, PdfCraftApp>| {
         h.state_mut().open_field_props("city", 0);
         h.run_steps(2);
         h.get_by_label("Actions").click();
@@ -865,7 +865,7 @@ fn a_radio_button_joining_a_group_by_name_stays_selected() {
     let mut h = harness_with("radios.pdf", two_radio_groups_fixture());
     h.state_mut().execute("form.prepare");
     h.run_steps(2);
-    let rects = |h: &Harness<'static, NovaPdfApp>| {
+    let rects = |h: &Harness<'static, PdfCraftApp>| {
         let s = h.state();
         let form = &s.session.get(s.views[0].id).unwrap().form;
         form.iter().flat_map(|f| f.widgets.iter().map(|w| w.rect)).collect::<Vec<_>>()
@@ -902,7 +902,7 @@ fn actions_tab_shows_a_chain_and_keeps_it_when_the_first_action_is_replaced() {
     let mut h = harness_with("chain.pdf", chained_action_fixture());
     h.state_mut().execute("form.prepare");
     h.run_steps(2);
-    let open = |h: &mut Harness<'static, NovaPdfApp>| {
+    let open = |h: &mut Harness<'static, PdfCraftApp>| {
         h.state_mut().open_field_props("go", 0);
         h.run_steps(2);
         h.get_by_label("Actions").click();
@@ -937,7 +937,7 @@ fn actions_tab_shows_a_chain_and_keeps_it_when_the_first_action_is_replaced() {
 
 /// Text field table: pick the tool and drag out an area in the empty lower part of page 1, 200 by
 /// 120 points from (40, 240) as displayed. The table's window opens for it.
-fn draw_table(h: &mut Harness<'static, NovaPdfApp>) {
+fn draw_table(h: &mut Harness<'static, PdfCraftApp>) {
     assert!(h.state_mut().execute("form.add.text_table"));
     h.run_steps(2);
     let (a, b) = (at(h, 40.0, 240.0), at(h, 240.0, 360.0));
@@ -1230,11 +1230,11 @@ fn the_calculation_order_is_moved_dragged_and_fixed() {
     h.run_steps(3);
     h.get_by_label("Calculation order").click();
     h.run_steps(3);
-    let order = |h: &Harness<'static, NovaPdfApp>| -> Vec<String> {
+    let order = |h: &Harness<'static, PdfCraftApp>| -> Vec<String> {
         let s = h.state();
         s.session.get(s.views[0].id).unwrap().calculation_order().fields.into_iter().map(|f| f.name).collect()
     };
-    let undo_label = |h: &Harness<'static, NovaPdfApp>| h.state().session.get(h.state().views[0].id).unwrap().can_undo().map(str::to_owned);
+    let undo_label = |h: &Harness<'static, PdfCraftApp>| h.state().session.get(h.state().views[0].id).unwrap().can_undo().map(str::to_owned);
     assert_eq!(order(&h), ["total", "sub", "other"]);
     // The card says what is wrong, and each row shows its value as the field does: total
     // calculated before sub, so it still has sub's old value.
@@ -1315,7 +1315,7 @@ fn a_loop_has_its_own_card_that_opens_the_formula() {
 }
 
 /// A radio group `shirt` of three buttons, S, M and L, with L chosen, while preparing the form.
-fn radio_group_harness() -> Harness<'static, NovaPdfApp> {
+fn radio_group_harness() -> Harness<'static, PdfCraftApp> {
     let mut h = harness();
     for (x, export) in [(20.0, "S"), (60.0, "M"), (100.0, "L")] {
         h.state_mut().apply_edit(pdfcraft_engine::Edit::AddField {
@@ -1332,7 +1332,7 @@ fn radio_group_harness() -> Harness<'static, NovaPdfApp> {
     h
 }
 
-fn buttons(h: &Harness<'static, NovaPdfApp>) -> (Vec<String>, Vec<String>) {
+fn buttons(h: &Harness<'static, PdfCraftApp>) -> (Vec<String>, Vec<String>) {
     let s = h.state();
     let doc = s.session.get(s.views[0].id).unwrap();
     let f = doc.form.iter().find(|f| f.name == "shirt").expect("the group is still there");
@@ -1421,7 +1421,7 @@ fn fields_sharing_a_name_each_show_their_own_formula() {
     }
     bytes.extend_from_slice(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objs.len() + 1).as_bytes());
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("dup.pdf", None, bytes.clone()).unwrap();
         app
@@ -1453,7 +1453,7 @@ fn a_notation_that_cannot_be_stored_keeps_field_properties_open() {
     }
     let props = Box::new(FieldProps { calculate: Some(Calculate::Notation("qty * 2".into())), ..Default::default() });
     h.state_mut().apply_edit(Edit::SetFieldProps { name: "sub".into(), props });
-    let formula = |h: &Harness<'static, NovaPdfApp>| {
+    let formula = |h: &Harness<'static, PdfCraftApp>| {
         let s = h.state();
         s.session.get(s.views[0].id).unwrap().form.iter().find(|f| f.name == "sub").unwrap().actions.calculate.clone()
     };
@@ -1522,7 +1522,7 @@ fn a_formula_reading_a_missing_field_has_its_own_card() {
 
 #[test]
 fn button_export_properties_apply_cancel_and_undo() {
-    fn retype(h: &mut Harness<'static, NovaPdfApp>, value: &str) {
+    fn retype(h: &mut Harness<'static, PdfCraftApp>, value: &str) {
         use egui::accesskit::Role;
         h.get_by_role_and_label(Role::TextInput, "Export value").click();
         h.run_steps(1);
@@ -1564,7 +1564,7 @@ fn button_export_properties_apply_cancel_and_undo() {
 }
 
 /// The screen rectangle of widget 0 of field `name` on the first view.
-fn field_rect(h: &Harness<'static, NovaPdfApp>, name: &str) -> egui::Rect {
+fn field_rect(h: &Harness<'static, PdfCraftApp>, name: &str) -> egui::Rect {
     let s = h.state();
     let doc = s.session.get(s.views[0].id).unwrap();
     let f = doc.form.iter().find(|f| f.name == name).unwrap();

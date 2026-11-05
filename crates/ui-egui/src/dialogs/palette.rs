@@ -5,7 +5,7 @@ use egui::{Align2, CornerRadius, Rect, Sense, Stroke, vec2};
 use pdfcraft_engine::catalog::{Availability, TOOL_GROUPS};
 
 use crate::theme::{self, Tokens};
-use crate::{NovaPdfApp, icons};
+use crate::{PdfCraftApp, icons};
 
 struct Hit {
     /// The tool panel to open (tools and catalogue items); `None` for plain commands.
@@ -44,7 +44,7 @@ fn score_for_direction(hay: &str, needle: &str, rtl: bool) -> Option<usize> {
 }
 
 /// Draw the command palette and dispatch the chosen command or tool group.
-pub fn show(app: &mut NovaPdfApp, ctx: &egui::Context) {
+pub fn show(app: &mut PdfCraftApp, ctx: &egui::Context) {
     let palette_rect_id = egui::Id::unique("palette_rect");
     if !app.palette_open {
         return;

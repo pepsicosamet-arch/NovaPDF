@@ -9,7 +9,7 @@
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::SystemTime;
 
-use crate::NovaPdfApp;
+use crate::PdfCraftApp;
 
 /// At most this many folders can be pinned.
 pub const MAX_PINNED: usize = 8;
@@ -180,7 +180,7 @@ fn cloud_drive(folder: &str) -> String {
     if account.is_empty() { provider.to_string() } else { format!("{provider} · {account}") }
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// File ▸ Pin folder to Home…: choose a folder whose newest PDFs Home lists.
     pub fn pin_folder_dialog(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
@@ -283,7 +283,7 @@ impl NovaPdfApp {
 
 /// The Home view's Folders section (desktop only: the web build has no folders to read).
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) fn section(app: &mut NovaPdfApp, ui: &mut egui::Ui) {
+pub(crate) fn section(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     use egui::{Align2, CornerRadius, Rect, Sense, vec2};
 
     use crate::theme::{self, Tokens};

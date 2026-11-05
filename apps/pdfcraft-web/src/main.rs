@@ -6,7 +6,7 @@
 #[cfg(target_arch = "wasm32")]
 fn main() {
     use eframe::wasm_bindgen::JsCast;
-    use pdfcraft_ui_egui::NovaPdfApp;
+    use pdfcraft_ui_egui::PdfCraftApp;
 
     let options = eframe::WebOptions { renderer: eframe::Renderer::Glow, ..Default::default() };
     wasm_bindgen_futures::spawn_local(async move {
@@ -22,7 +22,7 @@ fn main() {
                 canvas,
                 options,
                 Box::new(|cc| {
-                    let mut app = NovaPdfApp::new();
+                    let mut app = PdfCraftApp::new();
                     // "printcraft": settings saved under the app's former name, PrintCraft.
                     if let Some(json) = cc.storage.and_then(|s| s.get_string("pdfcraft").or_else(|| s.get_string("printcraft"))) {
                         app.restore(&json);

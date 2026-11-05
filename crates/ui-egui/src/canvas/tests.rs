@@ -880,7 +880,7 @@ fn text_pages_pdf(lines: &[&str]) -> Vec<u8> {
 /// in page order, reading the pages whose text wasn't read for display.
 #[test]
 fn select_all_copies_the_whole_document_while_scrolling_continuously() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
     let v = &mut app.views[0];
     assert!(v.continuous, "continuous scrolling is the default");
@@ -929,7 +929,7 @@ fn select_all_copies_the_whole_document_while_scrolling_continuously() {
 /// those that failed before.
 #[test]
 fn a_document_copy_reads_only_the_pages_it_needs() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
     app.views[0].text_failed.insert(2);
     let job = crate::DocumentCopyJob::of(&app.views[0], app.session.get(app.views[0].id).unwrap());
@@ -942,7 +942,7 @@ fn a_document_copy_reads_only_the_pages_it_needs() {
 /// copied after it started, from the page or anywhere else (a text field, a comment).
 #[test]
 fn a_later_copy_cancels_a_document_copy_still_reading() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
     let ctx = egui::Context::default();
     // Another copy in the same frame (here a text field's) drops it.
@@ -969,7 +969,7 @@ fn a_later_copy_cancels_a_document_copy_still_reading() {
 #[test]
 fn a_press_on_a_page_ends_select_all_of_the_document() {
     let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
         app
     });
@@ -1010,7 +1010,7 @@ fn a_press_on_a_page_ends_select_all_of_the_document() {
 /// cancelled copy gives nothing (a new copy or a closed document cancels the old one).
 #[test]
 fn a_document_copy_reads_in_page_order_and_stops_when_cancelled() {
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     app.open_bytes("three.pdf", None, text_pages_pdf(&["Alpha one", "Bravo two", "Charlie three"])).unwrap();
     // The middle page's text read for display already; the others read by the copy.
     let doc = app.session.get(app.views[0].id).unwrap();
@@ -1175,7 +1175,7 @@ fn solid_result(request: RenderRequest, w: u32, h: u32) -> pdfcraft_render::Rend
 fn replacing_a_page_after_layout_never_uploads_an_oversized_texture() {
     let ctx = egui::Context::default();
     ctx.input_mut(|i| i.max_texture_side = 2048);
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     let original = app.session.create_blank(200.0, 300.0, 1).unwrap();
     let replacement = app.session.create_blank(400.0, 500.0, 1).unwrap();
     app.open_bytes("original.pdf", None, original.as_ref().clone()).unwrap();
@@ -1708,7 +1708,7 @@ fn thumbnail_tags_do_not_change_as_a_row_scrolls_in_or_out() {
 #[test]
 fn many_open_documents_share_one_raster_allowance_and_close_releases_handles() {
     let ctx = egui::Context::default();
-    let mut app = NovaPdfApp::new();
+    let mut app = PdfCraftApp::new();
     let bytes = app.session.create_blank(612.0, 792.0, 1).unwrap();
     let mut expected = Vec::new();
     for index in 0..6 {
@@ -1831,7 +1831,7 @@ fn suspending_a_view_releases_owned_raster_textures_and_queue_state() {
 #[test]
 fn edit_text_boxes_stay_drawn_while_page_input_is_blocked() {
     let mut h = egui_kittest::Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         let bytes = app.session.create_blank(300.0, 400.0, 1).unwrap();
         app.open_bytes("blank.pdf", None, bytes.as_ref().clone()).unwrap();
         app.quick_tool = QuickTool::EditText;
@@ -1853,7 +1853,7 @@ fn virtualized_organizer_keeps_insert_gaps_at_document_positions() {
     use egui_kittest::kittest::Queryable;
 
     let mut h = egui_kittest::Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         let bytes = app.session.create_blank(300.0, 400.0, 100).unwrap();
         app.open_bytes("organize-gaps.pdf", None, bytes.as_ref().clone()).unwrap();
         app.views[0].organize = true;
@@ -1884,7 +1884,7 @@ fn virtualized_organizer_keeps_insert_gaps_at_document_positions() {
 #[test]
 fn real_shell_pages_organizer_and_print_only_collect_current_thumbnail_consumers() {
     let mut h = egui_kittest::Harness::builder().with_size(vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         let bytes = app.session.create_blank(612.0, 792.0, 10_000).unwrap();
         app.open_bytes("synthetic-ten-thousand.pdf", None, bytes.as_ref().clone()).unwrap();
         app.right = Some(RightPanel::Pages);
@@ -2242,14 +2242,14 @@ fn a_moved_picture_is_drawn_from_the_fresh_raster_while_a_tile_is_still_stale() 
     }
     bytes.extend_from_slice(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objs.len() + 1).as_bytes());
     let mut h = egui_kittest::Harness::builder().with_size(vec2(1400.0, 1100.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("picture.pdf", None, bytes.clone()).unwrap();
         app.set_option("zoom", "100").unwrap();
         app.quick_tool = QuickTool::EditText;
         app
     });
-    let settle = |h: &mut egui_kittest::Harness<'static, NovaPdfApp>| {
+    let settle = |h: &mut egui_kittest::Harness<'static, PdfCraftApp>| {
         for _ in 0..400 {
             h.step();
             if !h.state().render_pending() {
@@ -2271,7 +2271,7 @@ fn a_moved_picture_is_drawn_from_the_fresh_raster_while_a_tile_is_still_stale() 
     };
     let (old, new) = (Rect::from_two_pos(at(42.0, 262.0), at(98.0, 318.0)), Rect::from_two_pos(at(182.0, 82.0), at(238.0, 138.0)));
     // Select the picture and drag it, without overlap, from (40, 260) to (180, 80).
-    let drag = |h: &mut egui_kittest::Harness<'static, NovaPdfApp>, from: Pos2, to: Pos2, release: bool| {
+    let drag = |h: &mut egui_kittest::Harness<'static, PdfCraftApp>, from: Pos2, to: Pos2, release: bool| {
         h.hover_at(from);
         h.run_steps(1);
         h.drag_at(from);

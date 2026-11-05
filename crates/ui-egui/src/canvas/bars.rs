@@ -1,4 +1,4 @@
-use super::{Color32, CornerRadius, DocInfo, DocView, NovaPdfApp, Pos2, Rect, Sense, SnapshotKind, Stroke, Tokens, icons, vec2};
+use super::{Color32, CornerRadius, DocInfo, DocView, PdfCraftApp, Pos2, Rect, Sense, SnapshotKind, Stroke, Tokens, icons, vec2};
 
 /// Whether `p` lies in the bottom-left quadrant of `area`, where the page size shows (#1855).
 pub(super) fn in_size_hint_zone(area: Rect, p: Pos2) -> bool {
@@ -289,7 +289,7 @@ pub(crate) fn quick_bar_offset(margin: f32, width: f32) -> f32 {
 }
 
 /// The unified quick-action bar and hotbar in the margin or docked to an edge.
-pub(super) fn quick_bar(app: &mut NovaPdfApp, area: Rect, page_left: Option<f32>, ui: &mut egui::Ui) {
+pub(super) fn quick_bar(app: &mut PdfCraftApp, area: Rect, page_left: Option<f32>, ui: &mut egui::Ui) {
     crate::hotbar::show(app, area, page_left, ui);
 }
 

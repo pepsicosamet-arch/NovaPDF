@@ -3,7 +3,7 @@
 use egui::accesskit::Role;
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use pdfcraft_ui_egui::NovaPdfApp;
+use pdfcraft_ui_egui::PdfCraftApp;
 
 fn fixture() -> Vec<u8> {
     fixture_with_info(None)
@@ -34,7 +34,7 @@ fn fixture_with_info(info: Option<&str>) -> Vec<u8> {
 }
 
 /// Return the rectangle recorded for a dialog card, failing the test when the card is missing.
-fn card(h: &Harness<'_, NovaPdfApp>, id: &str) -> egui::Rect {
+fn card(h: &Harness<'_, PdfCraftApp>, id: &str) -> egui::Rect {
     h.ctx.data(|d| d.get_temp(egui::Id::unique(id).with("card"))).unwrap_or_else(|| panic!("missing dialog card {id}"))
 }
 
@@ -55,7 +55,7 @@ fn protected() -> Vec<u8> {
 #[test]
 fn document_properties_fields_are_tall_and_inset() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("doc.pdf", None, fixture()).unwrap();
         app.set_option("dialog", "properties").unwrap();
@@ -75,7 +75,7 @@ fn document_properties_fields_are_tall_and_inset() {
 #[test]
 fn password_prompt_field_is_tall_and_inset() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("secret.pdf", None, protected()).unwrap();
         app
@@ -94,7 +94,7 @@ fn password_prompt_field_is_tall_and_inset() {
 fn document_properties_long_filename_does_not_overflow_card() {
     let long_name = "Global_sociology_introducing_five_contemporary_societies_Schneider_Linda_Silverman_Arnold_2000_Boston_isbn13_9780072294309_hash_3d2960a9212a8573bba2536e91f36e59_archive_copy.pdf";
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes(long_name, None, fixture()).unwrap();
         app.set_option("dialog", "properties").unwrap();
@@ -109,7 +109,7 @@ fn document_properties_long_filename_does_not_overflow_card() {
 fn document_properties_values_line_up_and_long_fields_wrap() {
     let info = "<< /Title (Showcase) /Subject (A specimen document exercising typography, world scripts, vector art, forms and annotations) /Creator (demo-pdf) >>";
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("doc.pdf", None, fixture_with_info(Some(info))).unwrap();
         app.set_option("dialog", "properties").unwrap();
@@ -136,7 +136,7 @@ fn space_audit_tab_measures_the_file_and_stays_in_the_card() {
     use pdfcraft_ui_egui::{Dialog, PropsTab};
     let open = |dialog: Dialog| {
         let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
-            let mut app = NovaPdfApp::new();
+            let mut app = PdfCraftApp::new();
             app.set_option("language", "en").unwrap();
             app.open_bytes("doc.pdf", None, fixture()).unwrap();
             app.dialog = Some(dialog);
@@ -148,7 +148,7 @@ fn space_audit_tab_measures_the_file_and_stays_in_the_card() {
     let fonts = card(&open(Dialog::Properties(PropsTab::Fonts)), "dialog");
     // The tab is reachable by name, like the other Properties tabs.
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("doc.pdf", None, fixture()).unwrap();
         app.set_option("dialog", "space-audit").unwrap();
@@ -173,7 +173,7 @@ fn space_audit_tab_measures_the_file_and_stays_in_the_card() {
 fn space_audit_tab_measures_again_after_an_edit() {
     use pdfcraft_engine::optimize::SpaceCategory;
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("doc.pdf", None, fixture()).unwrap();
         app.set_option("dialog", "space-audit").unwrap();
@@ -181,7 +181,7 @@ fn space_audit_tab_measures_again_after_an_edit() {
     });
     h.run_steps(4);
     let bookmarks =
-        |h: &Harness<'_, NovaPdfApp>| h.state().space_audit.iter().filter(|r| r.category == SpaceCategory::Bookmarks).map(|r| r.bytes).sum::<u64>();
+        |h: &Harness<'_, PdfCraftApp>| h.state().space_audit.iter().filter(|r| r.category == SpaceCategory::Bookmarks).map(|r| r.bytes).sum::<u64>();
     let before = h.state().space_audit.clone();
     assert_eq!(bookmarks(&h), 0, "the fixture has no outline: {before:?}");
     // Further frames with the file unchanged keep the same measurement.
@@ -208,7 +208,7 @@ fn space_audit_tab_measures_again_after_an_edit() {
 fn dialog_buttons_follow_the_content_after_a_taller_tab() {
     use pdfcraft_ui_egui::{Dialog, PropsTab};
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("doc.pdf", None, fixture()).unwrap();
         app.dialog = Some(Dialog::Properties(PropsTab::InitialView));
@@ -233,7 +233,7 @@ fn dialog_buttons_follow_the_content_after_a_taller_tab() {
 #[test]
 fn page_hover_cursors_stay_off_while_a_dialog_is_open() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("form.pdf", None, include_bytes!("../data/form.pdf").to_vec()).unwrap();
         // Small enough that the check box sits above the dialog card.

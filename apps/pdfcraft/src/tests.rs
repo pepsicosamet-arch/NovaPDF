@@ -141,12 +141,12 @@ fn the_desktop_frame_is_turned_off_only_when_the_app_draws_one() {
 fn a_software_renderer_is_shown_to_the_user() {
     use eframe::wgpu::DeviceType;
     // Issue #519: WARP or llvmpipe is announced in the app, not just in pdfcraft.log.
-    let mut app = super::NovaPdfApp::new();
+    let mut app = super::PdfCraftApp::new();
     super::notify_software_renderer(&mut app, DeviceType::Cpu);
     let notice = app.toast.as_ref().map(|(m, _)| m.as_str()).unwrap_or_default();
     assert!(notice.contains("without a graphics processor"), "{notice:?}");
     for gpu in [DeviceType::IntegratedGpu, DeviceType::DiscreteGpu, DeviceType::VirtualGpu, DeviceType::Other] {
-        let mut app = super::NovaPdfApp::new();
+        let mut app = super::PdfCraftApp::new();
         super::notify_software_renderer(&mut app, gpu);
         assert!(app.toast.is_none(), "{gpu:?}: {:?}", app.toast);
     }

@@ -1,4 +1,4 @@
-use super::{LayerOp, NovaPdfApp, Pos2, Rect};
+use super::{LayerOp, PdfCraftApp, Pos2, Rect};
 
 /// A validation badge drawn over a signature widget: the widget rectangle (user space), the verdict it shows, and its hover text.
 pub(crate) struct SignatureBadge {
@@ -43,7 +43,7 @@ pub(super) fn page_scroll<R>(
 }
 
 /// Run a push button's action (the ones that need no JavaScript engine).
-pub(super) fn run_button(app: &mut NovaPdfApp, index: usize, name: &str, action: pdfcraft_engine::form_scripts::ButtonAction) {
+pub(super) fn run_button(app: &mut PdfCraftApp, index: usize, name: &str, action: pdfcraft_engine::form_scripts::ButtonAction) {
     use pdfcraft_engine::form_scripts::ButtonAction as B;
     let pages = app.session.get(app.views[index].id).map_or(0, |d| d.info.pages.len());
     match action {
@@ -124,7 +124,7 @@ pub(super) fn run_button(app: &mut NovaPdfApp, index: usize, name: &str, action:
 
 /// Run a set-layer-visibility action from a button or link. It changes what is shown, as the
 /// Layers panel does (which follows), not the document.
-pub(super) fn set_layers(app: &mut NovaPdfApp, index: usize, changes: &[(LayerOp, (u32, u16))], preserve_rb: bool) {
+pub(super) fn set_layers(app: &mut PdfCraftApp, index: usize, changes: &[(LayerOp, (u32, u16))], preserve_rb: bool) {
     let id = app.views[index].id;
     if app.session.set_layer_state(id, changes, preserve_rb) {
         app.views[index].invalidate_content();

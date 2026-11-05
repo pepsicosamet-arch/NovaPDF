@@ -30,7 +30,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use pdfcraft_engine::DocId;
 
-use crate::NovaPdfApp;
+use crate::PdfCraftApp;
 use crate::files::{FilePurpose, PickTarget};
 
 /// What the chosen files are for.
@@ -55,7 +55,7 @@ pub(crate) enum Ask {
 }
 
 /// What to do with the chosen paths, on a later frame.
-type Then = Box<dyn FnOnce(&mut NovaPdfApp, Vec<PathBuf>) + Send>;
+type Then = Box<dyn FnOnce(&mut PdfCraftApp, Vec<PathBuf>) + Send>;
 
 /// A finished pick, waiting for the next frame.
 struct Picked {
@@ -167,7 +167,7 @@ impl Pickers {
     }
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// Show a native picker for `pick_for` without blocking the frame. The choice is used on a
     /// later frame by [`Self::process_picked`].
     pub(crate) fn pick(&mut self, pick_for: PickFor, dialog: rfd::AsyncFileDialog, multiple: bool) {
@@ -197,7 +197,7 @@ impl NovaPdfApp {
     ///
     /// `pick_override` answers instead of a native panel (tests and automation); the answer
     /// still arrives on a later frame, like a real pick.
-    pub(crate) fn ask(&mut self, ask: Ask, target: Option<DocId>, then: impl FnOnce(&mut NovaPdfApp, Vec<PathBuf>) + Send + 'static) -> bool {
+    pub(crate) fn ask(&mut self, ask: Ask, target: Option<DocId>, then: impl FnOnce(&mut PdfCraftApp, Vec<PathBuf>) + Send + 'static) -> bool {
         let target = self.pick_target(target);
         let then: Then = Box::new(then);
         if self.pickers.showing.swap(true, Ordering::SeqCst) {
@@ -249,7 +249,7 @@ impl NovaPdfApp {
     }
 
     /// [`Self::ask`] for one path: `then` gets the first chosen path.
-    pub(crate) fn ask_one(&mut self, ask: Ask, target: Option<DocId>, then: impl FnOnce(&mut NovaPdfApp, PathBuf) + Send + 'static) -> bool {
+    pub(crate) fn ask_one(&mut self, ask: Ask, target: Option<DocId>, then: impl FnOnce(&mut PdfCraftApp, PathBuf) + Send + 'static) -> bool {
         self.ask(ask, target, move |app, paths| {
             if let Some(path) = paths.into_iter().next() {
                 then(app, path);
@@ -302,7 +302,7 @@ mod tests {
 
     #[test]
     fn worker_queues_the_pick_and_keeps_the_flag_until_the_frame_uses_it() {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.pickers.showing.store(true, Ordering::SeqCst);
         let got = Arc::new(Mutex::new(Vec::new()));
         let worker = app.pickers.spawn_worker(None, None, async { vec![PathBuf::from("a.pdf")] }, record(&got)).expect("worker starts");
@@ -344,7 +344,7 @@ mod tests {
 
     #[test]
     fn the_follow_up_runs_on_a_later_frame_and_not_when_cancelled() {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         let got = Arc::new(Mutex::new(Vec::new()));
         app.pickers.deliver(None, vec![], record(&got));
         app.pickers.deliver(None, vec![PathBuf::from("b.pdf")], record(&got));
@@ -355,7 +355,7 @@ mod tests {
 
     #[test]
     fn cancellation_requests_a_frame_for_a_retained_open_reply() {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         let ctx = egui::Context::default();
         app.ctx = Some(ctx.clone());
         for _ in 0..2 {
@@ -393,7 +393,7 @@ mod tests {
 
     #[test]
     fn a_second_picker_waits_for_the_one_showing_and_opens_when_it_closes() {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.pick_override = Some(vec!["c.pdf".into()]);
         let got = Arc::new(Mutex::new(Vec::new()));
         let first = got.clone();
@@ -411,7 +411,7 @@ mod tests {
 
     #[test]
     fn a_waiting_picker_still_opens_when_the_one_showing_is_cancelled() {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.pick_override = Some(vec!["c.pdf".into()]);
         app.pickers.showing.store(true, Ordering::SeqCst);
         let got = Arc::new(Mutex::new(Vec::new()));
@@ -458,7 +458,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let out = dir.join("notes (reduced).pdf");
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         let source = text_pdf("Minutes of the harbour board");
         app.open_bytes("notes.pdf", None, source.clone()).unwrap();
@@ -483,7 +483,7 @@ mod tests {
 
     #[test]
     fn a_follow_up_that_asks_again_gets_its_picker_before_a_request_that_came_first() {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.pick_override = Some(vec!["first.fdf".into()]);
         let got = Arc::new(Mutex::new(Vec::new()));
         let into = got.clone();
@@ -502,7 +502,7 @@ mod tests {
 
     #[test]
     fn a_panicking_follow_up_is_reported_and_the_next_pick_still_runs() {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         let got = Arc::new(Mutex::new(Vec::new()));
         app.pickers.deliver(None, vec![PathBuf::from("x.pdf")], Box::new(|_, _| panic!("follow-up failed")));
         app.pickers.deliver(None, vec![PathBuf::from("y.pdf")], record(&got));

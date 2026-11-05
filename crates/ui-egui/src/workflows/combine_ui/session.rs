@@ -4,9 +4,9 @@ use super::files::{AssessError, Assessed, CombineFile, Incoming, Secret, Snapsho
 #[cfg(not(target_arch = "wasm32"))]
 use super::parts::combinable_in;
 use super::parts::{Part, items_of, moved_order, natural, parts_of, range_of, title_of};
-use super::{Arc, BTreeSet, CombineTab, HISTORY, Modifiers, NovaPdfApp};
+use super::{Arc, BTreeSet, CombineTab, HISTORY, Modifiers, PdfCraftApp};
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// Show the Combine files tab (File ▸ Combine files…), opening it if needed.
     pub fn open_combine_tab(&mut self) {
         self.combine_tab.open = true;

@@ -3,7 +3,7 @@
 //! landing in whichever document is active by then.
 
 use egui_kittest::Harness;
-use pdfcraft_ui_egui::NovaPdfApp;
+use pdfcraft_ui_egui::PdfCraftApp;
 
 /// A one-page document with a proper xref table.
 fn fixture() -> Vec<u8> {
@@ -27,9 +27,9 @@ fn fixture() -> Vec<u8> {
     out
 }
 
-fn harness() -> Harness<'static, NovaPdfApp> {
+fn harness() -> Harness<'static, PdfCraftApp> {
     let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_cc| {
-        let mut app = NovaPdfApp::new();
+        let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
         app.open_bytes("a.pdf", None, fixture()).unwrap();
         app.open_bytes("b.pdf", None, fixture()).unwrap();
@@ -39,7 +39,7 @@ fn harness() -> Harness<'static, NovaPdfApp> {
     h
 }
 
-fn dirty(app: &NovaPdfApp, view: usize) -> bool {
+fn dirty(app: &PdfCraftApp, view: usize) -> bool {
     app.session.get(app.views[view].id).is_some_and(|d| d.dirty)
 }
 

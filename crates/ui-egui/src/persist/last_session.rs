@@ -4,7 +4,7 @@
 
 use serde::Serialize;
 
-use crate::NovaPdfApp;
+use crate::PdfCraftApp;
 
 /// More files than anyone keeps open. Settings are untrusted, so a longer list is cut here.
 pub const MAX_FILES: usize = 64;
@@ -56,7 +56,7 @@ pub(crate) fn absolute(path: &str) -> String {
     std::path::absolute(path).map_or_else(|_| path.to_string(), |p| p.to_string_lossy().into_owned())
 }
 
-impl NovaPdfApp {
+impl PdfCraftApp {
     /// The files open now. Documents that were never saved to a file are left out (crash
     /// recovery keeps their unsaved work), and so is everything on the web, which has no paths.
     pub(crate) fn open_session(&self) -> LastSession {

@@ -126,7 +126,7 @@ mod tests {
     fn the_app_draws_at_the_system_scale_until_a_size_is_chosen() {
         // A display that reports 200% (#456: a 1080p screen whose system reports 2×).
         let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1000.0, 700.0)).with_pixels_per_point(2.0).build_eframe(|_cc| {
-            let mut app = crate::NovaPdfApp::new();
+            let mut app = crate::PdfCraftApp::new();
             app.system_text_scale = 1.25;
             app
         });
@@ -141,7 +141,7 @@ mod tests {
         assert!(h.state_mut().set_option("ui-scale", "5000").is_err());
         // The chosen size survives a restart; a hostile one in the settings follows the system.
         let saved = h.state().persist();
-        let mut restored = crate::NovaPdfApp::new();
+        let mut restored = crate::PdfCraftApp::new();
         restored.restore(&saved);
         assert_eq!(restored.ui_scale, Some(1.5));
         restored.restore(&saved.replace("\"ui_scale\":1.5", "\"ui_scale\":1e30"));
